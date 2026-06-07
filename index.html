@@ -655,7 +655,7 @@ async function renderChores(){
             <div class="chore-meta" style="margin-top:4px">${effPts} p${assignedTo?' · '+assignedTo.name:' · Felles'}</div>
           </div>
           <div class="chore-right">
-            <button class="btn-log ${done?'done':''}" onclick="${done||!isForMe?'':``logRecurring('${t.id}','${t.title}',${t.pts})``}">
+            <button class="btn-log ${done?'done':''}" onclick="${done||!isForMe?'':('logRecurring(\''+t.id+'\',\''+t.title+'\','+t.pts+')')}">
               ${done?'Gjort':isForMe?'Registrer':'—'}
             </button>
           </div>
