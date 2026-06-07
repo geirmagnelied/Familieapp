@@ -395,21 +395,27 @@ async function init() {
     </div>`;
   };
 
+  splash.innerHTML = '<div class="splash-title">FamilieApp</div><div id="splashStatus" style="font-size:13px;color:var(--muted);font-weight:600;margin-top:10px">Steg 1: koplar til Supabase...</div><div class="spinner" style="margin-top:14px;margin-left:auto;margin-right:auto"></div>';
+
   try {
     members = await sb('family_members?select=*&order=id');
   } catch(e) {
-    showErr(`Kunne ikkje laste familiemedlemmer.<br><br>${e.message}`); return;
+    showErr('Steg 1 feila: ' + e.message); return;
   }
 
   if (!members || members.length === 0) {
-    showErr('Ingen familiemedlemmer funne i databasen.<br><br>Sjekk at tabellen <strong>family_members</strong> har data i Supabase.'); return;
+    showErr('Steg 1 ok, men ingen familiemedlemmer funne. Sjekk family_members i Supabase.'); return;
   }
+
+  document.getElementById('splashStatus').textContent = 'Steg 2: hentar gjeremål...';
 
   try {
     chores = await sb('family_chores?select=*&order=sort_order');
   } catch(e) {
-    showErr(`Kunne ikkje laste gjeremål.<br><br>${e.message}`); return;
+    showErr('Steg 2 feila: ' + e.message); return;
   }
+
+  document.getElementById('splashStatus').textContent = 'Steg 3: startar app...';
 
   const saved = localStorage.getItem('familieapp_user');
   if (saved) {
