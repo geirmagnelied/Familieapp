@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>FamilieApp</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;700;800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; overscroll-behavior: none; background: #F2ECEE; }
+:root {
+  --bg:#F2ECEE; --surface:#FAF7F8; --card:#FFFFFF; --border:#E3D8DC;
+  --text:#2A2025; --muted:#9B8A90; --soft:#F5EEF1;
+  --pink:#D4607E; --pink-light:#FADADF; --pink-deep:#B8445F; --rose:#EAA0B0;
+  --grey:#7A7078; --charcoal:#3A2E32; --mint:#6DBF99; --gold:#E8B84B;
+  --radius:16px; --shadow:0 2px 12px rgba(160,80,100,0.08);
+  --font-h:'Baloo 2',sans-serif; --font-b:'Nunito',sans-serif;
+}
+body { font-family:var(--font-b); color:var(--text); overflow:hidden; }
+.app { display:flex; flex-direction:column; height:100dvh; max-width:480px; margin:0 auto; background:var(--bg); overflow:hidden; }
+
+#splash { position:fixed; inset:0; z-index:600; background:var(--bg); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; max-width:480px; margin:0 auto; }
+.splash-title { font-family:var(--font-h); font-size:28px; font-weight:800; color:var(--charcoal); }
+.spinner { width:36px; height:36px; border:3px solid var(--border); border-top-color:var(--pink); border-radius:50%; animation:spin 0.8s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+
+#onboarding { position:fixed; inset:0; z-index:500; background:var(--bg); display:none; flex-direction:column; align-items:center; justify-content:center; padding:40px 28px; max-width:480px; margin:0 auto; }
+.ob-title { font-family:var(--font-h); font-size:26px; font-weight:800; color:var(--charcoal); text-align:center; margin-bottom:6px; }
+.ob-sub { font-size:14px; color:var(--muted); text-align:center; margin-bottom:28px; font-weight:600; line-height:1.5; }
+.ob-grid { display:flex; flex-direction:column; gap:9px; width:100%; }
+.ob-btn { width:100%; padding:15px 18px; background:var(--card); border:2px solid var(--border); border-radius:var(--radius); font-family:var(--font-h); font-size:17px; font-weight:700; color:var(--charcoal); cursor:pointer; transition:all 0.15s; text-align:left; box-shadow:var(--shadow); }
+.ob-btn.selected { border-color:var(--pink); background:var(--pink-light); color:var(--pink-deep); }
+.ob-meta { font-size:12px; color:var(--muted); font-weight:600; margin-top:1px; }
+
+#pinPad { width:100%; margin-top:20px; display:none; flex-direction:column; align-items:center; gap:14px; }
+.pin-name { font-family:var(--font-h); font-size:20px; font-weight:700; color:var(--charcoal); }
+.pin-dots { display:flex; gap:12px; }
+.pin-dot { width:14px; height:14px; border-radius:50%; border:2px solid var(--border); background:none; transition:all 0.15s; }
+.pin-dot.filled { background:var(--pink); border-color:var(--pink); }
+.pin-error { font-size:13px; color:var(--pink-deep); font-weight:700; height:18px; }
+.pin-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; width:100%; max-width:280px; }
+.pin-key { padding:16px; background:var(--card); border:1px solid var(--border); border-radius:14px; font-family:var(--font-h); font-size:22px; font-weight:700; color:var(--charcoal); cursor:pointer; text-align:center; transition:all 0.12s; box-shadow:var(--shadow); }
+.pin-key:active { background:var(--pink-light); border-color:var(--pink); transform:scale(0.95); }
+.pin-key.del { font-size:16px; color:var(--muted); }
+.btn-back { margin-top:4px; background:none; border:none; color:var(--muted); font-family:var(--font-b); font-size:14px; font-weight:700; cursor:pointer; }
+
+.header { background:linear-gradient(135deg,#B8445F 0%,#D4607E 55%,#E8A0B0 100%); padding:44px 18px 10px; flex-shrink:0; z-index:10; box-shadow:0 2px 12px rgba(180,60,90,0.18); }
+.header-inner { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.app-title { font-family:var(--font-h); font-size:19px; font-weight:800; color:#fff; }
+.header-center { flex:1; text-align:center; font-size:12px; color:rgba(255,255,255,0.8); font-weight:700; }
+.user-chip { background:rgba(255,255,255,0.22); border:1px solid rgba(255,255,255,0.35); color:#fff; font-size:13px; font-weight:800; padding:5px 13px; border-radius:20px; cursor:pointer; font-family:var(--font-b); }
+
+.nav { display:flex; background:var(--card); border-top:1px solid var(--border); flex-shrink:0; z-index:10; box-shadow:0 -1px 6px rgba(0,0,0,0.05); }
+.nav-btn { flex:1; padding:10px 4px 8px; border:none; background:none; font-family:var(--font-b); font-size:11px; font-weight:800; color:var(--muted); cursor:pointer; text-transform:uppercase; letter-spacing:0.4px; position:relative; transition:color 0.15s; }
+.nav-btn.active { color:var(--pink-deep); }
+.nav-btn.active::after { content:''; position:absolute; top:0; left:20%; right:20%; height:2px; background:var(--pink-deep); border-radius:0 0 3px 3px; }
+
+.content { flex:1; overflow-y:auto; padding:14px 14px 90px; -webkit-overflow-scrolling:touch; }
+
+.card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:16px; margin-bottom:12px; box-shadow:var(--shadow); }
+.card-title { font-family:var(--font-h); font-size:16px; font-weight:700; color:var(--charcoal); margin-bottom:13px; display:flex; align-items:center; justify-content:space-between; }
+.card-action { font-family:var(--font-b); font-size:13px; font-weight:700; color:var(--pink); cursor:pointer; }
+
+.my-score-big { text-align:center; padding:6px 0 14px; }
+.my-score-num { font-family:var(--font-h); font-size:68px; font-weight:800; color:var(--pink-deep); line-height:1; }
+.my-score-label { font-size:13px; color:var(--muted); font-weight:700; margin-top:3px; text-transform:uppercase; letter-spacing:0.5px; }
+.stat-row { display:flex; justify-content:space-around; margin-top:16px; padding-top:14px; border-top:1px solid var(--border); }
+.stat-box { text-align:center; }
+.stat-num { font-family:var(--font-h); font-size:24px; font-weight:800; color:var(--charcoal); }
+.stat-lbl { font-size:11px; color:var(--muted); font-weight:700; text-transform:uppercase; letter-spacing:0.3px; margin-top:1px; }
+
+.locked-box { text-align:center; padding:22px 14px; background:var(--soft); border-radius:12px; border:1px solid var(--border); }
+.locked-title { font-family:var(--font-h); font-size:17px; font-weight:700; color:var(--charcoal); margin-bottom:6px; }
+.locked-sub { font-size:13px; color:var(--muted); font-weight:600; line-height:1.5; }
+.countdown { font-family:var(--font-h); font-size:26px; font-weight:800; color:var(--pink); margin:10px 0; }
+
+.log-item { display:flex; align-items:center; justify-content:space-between; padding:9px 0; border-bottom:1px solid var(--border); }
+.log-item:last-child { border-bottom:none; }
+.log-label { font-weight:600; font-size:14px; color:var(--charcoal); }
+.log-time { font-size:11px; color:var(--muted); margin-top:1px; font-weight:600; }
+.log-pts { font-family:var(--font-h); font-size:16px; font-weight:800; color:var(--pink); }
+
+/* Chores */
+.chore-item { display:flex; align-items:center; gap:12px; padding:13px 0; border-bottom:1px solid var(--border); }
+.chore-item:last-child { border-bottom:none; }
+.chore-info { flex:1; min-width:0; }
+.chore-label { font-weight:700; font-size:14px; color:var(--charcoal); }
+.chore-meta { font-size:12px; color:var(--muted); margin-top:2px; font-weight:600; }
+.chore-right { display:flex; flex-direction:column; gap:5px; align-items:flex-end; flex-shrink:0; }
+.btn-log { background:var(--pink); color:#fff; border:none; border-radius:10px; font-family:var(--font-b); font-weight:800; font-size:13px; padding:9px 16px; cursor:pointer; transition:all 0.15s; }
+.btn-log:active { transform:scale(0.96); }
+.btn-log.done { background:var(--soft); color:var(--mint); border:2px solid var(--mint); }
+.min-input { width:58px; background:var(--soft); border:1px solid var(--border); color:var(--text); border-radius:9px; font-family:var(--font-b); font-size:14px; font-weight:700; padding:7px 8px; text-align:center; }
+.min-input:focus { outline:none; border-color:var(--pink); }
+.pts-preview { font-size:11px; color:var(--pink-deep); font-weight:800; text-align:right; }
+
+/* Recurring task badge */
+.recurring-badge { display:inline-flex; align-items:center; font-size:10px; font-weight:800; padding:2px 8px; border-radius:20px; background:rgba(232,184,75,0.15); color:#9A6A00; border:1px solid rgba(232,184,75,0.35); margin-top:3px; }
+
+/* Tasks */
+.task-item { display:flex; gap:12px; align-items:flex-start; padding:12px 0; border-bottom:1px solid var(--border); }
+.task-item:last-child { border-bottom:none; }
+.task-check { width:22px; height:22px; border-radius:7px; border:2px solid var(--border); background:none; cursor:pointer; flex-shrink:0; transition:all 0.18s; margin-top:2px; display:flex; align-items:center; justify-content:center; font-size:12px; }
+.task-check.checked { background:var(--mint); border-color:var(--mint); color:#fff; }
+.task-body { flex:1; }
+.task-title { font-weight:700; font-size:14px; color:var(--charcoal); }
+.task-title.done { text-decoration:line-through; color:var(--muted); }
+.task-meta { margin-top:4px; display:flex; gap:5px; flex-wrap:wrap; }
+.pill { display:inline-flex; align-items:center; padding:2px 8px; border-radius:20px; font-size:11px; font-weight:700; }
+.pill-pink { background:var(--pink-light); color:var(--pink-deep); }
+.pill-grey { background:var(--soft); color:var(--grey); border:1px solid var(--border); }
+.pill-gold { background:rgba(232,184,75,0.15); color:#9A6A00; border:1px solid rgba(232,184,75,0.3); }
+
+/* Shopping */
+.shop-item { display:flex; align-items:center; gap:12px; padding:11px 0; border-bottom:1px solid var(--border); }
+.shop-item:last-child { border-bottom:none; }
+.shop-check { width:22px; height:22px; border-radius:50%; border:2px solid var(--border); background:none; cursor:pointer; flex-shrink:0; transition:all 0.18s; display:flex; align-items:center; justify-content:center; font-size:12px; }
+.shop-check.checked { background:var(--pink); border-color:var(--pink); color:#fff; }
+.shop-label { flex:1; font-size:14px; font-weight:600; color:var(--charcoal); }
+.shop-label.done { text-decoration:line-through; color:var(--muted); }
+.shop-qty { font-size:12px; color:var(--muted); font-weight:700; }
+.prog-row { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+.prog-bg { flex:1; height:4px; background:var(--border); border-radius:4px; overflow:hidden; }
+.prog-fill { height:100%; background:linear-gradient(90deg,var(--pink-light),var(--pink)); border-radius:4px; transition:width 0.4s; }
+.prog-text { font-size:12px; font-weight:800; color:var(--muted); white-space:nowrap; }
+.add-row { display:flex; gap:8px; margin-top:10px; }
+.add-input { flex:1; background:var(--soft); border:1.5px solid var(--border); color:var(--text); border-radius:10px; font-family:var(--font-b); font-size:14px; padding:9px 12px; }
+.add-input:focus { outline:none; border-color:var(--pink); }
+.btn-sm { background:var(--pink); color:#fff; border:none; border-radius:10px; font-family:var(--font-b); font-weight:800; font-size:18px; width:40px; cursor:pointer; }
+
+/* Admin */
+.admin-note { font-size:13px; color:var(--muted); font-weight:600; margin-bottom:12px; padding:10px 12px; background:var(--soft); border-radius:10px; line-height:1.5; }
+.admin-row { display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--border); }
+.admin-row:last-of-type { border-bottom:none; }
+.admin-name { flex:1; font-weight:700; font-size:14px; color:var(--charcoal); }
+.admin-meta { font-size:12px; color:var(--muted); font-weight:600; text-align:right; }
+.btn-del { background:none; border:1px solid var(--border); color:var(--muted); border-radius:8px; font-size:12px; font-weight:800; padding:4px 10px; cursor:pointer; font-family:var(--font-b); flex-shrink:0; }
+.btn-del:active { background:var(--pink-light); color:var(--pink-deep); border-color:var(--pink); }
+
+.admin-section-title { font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:0.6px; color:var(--muted); margin:16px 0 8px; }
+
+.fab { position:fixed; bottom:76px; right:18px; width:52px; height:52px; background:var(--pink-deep); border:none; border-radius:50%; font-size:26px; color:#fff; cursor:pointer; box-shadow:0 4px 16px rgba(180,60,90,0.35); display:none; align-items:center; justify-content:center; z-index:50; }
+.fab:active { transform:scale(0.93); }
+
+.backdrop { position:fixed; inset:0; background:rgba(0,0,0,0.38); backdrop-filter:blur(3px); z-index:200; display:flex; align-items:flex-end; justify-content:center; animation:bdin 0.18s; }
+@keyframes bdin { from{opacity:0} to{opacity:1} }
+.sheet { background:var(--card); border-radius:22px 22px 0 0; width:100%; max-width:480px; padding:16px 18px 38px; max-height:90vh; overflow-y:auto; animation:sheetup 0.25s cubic-bezier(0.32,0.72,0,1); }
+@keyframes sheetup { from{transform:translateY(100%)} to{transform:translateY(0)} }
+.sheet-handle { width:34px; height:3px; background:var(--border); border-radius:3px; margin:0 auto 14px; }
+.sheet-title { font-family:var(--font-h); font-size:18px; font-weight:700; color:var(--charcoal); margin-bottom:14px; }
+.field { margin-bottom:12px; }
+.field label { display:block; font-size:11px; font-weight:800; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:4px; }
+.field input,.field select,.field textarea { width:100%; background:var(--soft); border:1.5px solid var(--border); color:var(--text); border-radius:11px; font-family:var(--font-b); font-size:15px; padding:11px 13px; }
+.field input:focus,.field select:focus,.field textarea:focus { outline:none; border-color:var(--pink); }
+.field textarea { resize:none; height:72px; }
+.field-row { display:flex; gap:10px; }
+.field-row .field { flex:1; }
+.type-row { display:flex; gap:6px; flex-wrap:wrap; }
+.type-chip { padding:6px 13px; border-radius:20px; font-size:12px; font-weight:700; border:2px solid var(--border); cursor:pointer; font-family:var(--font-b); background:var(--soft); color:var(--muted); transition:all 0.15s; }
+.type-chip.active { background:var(--pink-light); color:var(--pink-deep); border-color:var(--pink); }
+.btn-save { width:100%; background:var(--pink-deep); color:#fff; border:none; border-radius:12px; font-family:var(--font-h); font-size:17px; font-weight:800; padding:15px; cursor:pointer; margin-top:6px; }
+.btn-save:active { transform:scale(0.98); }
+.btn-cancel-s { width:100%; background:none; border:1.5px solid var(--border); color:var(--muted); border-radius:12px; font-family:var(--font-b); font-size:14px; font-weight:700; padding:12px; cursor:pointer; margin-top:8px; }
+.hint { font-size:12px; color:var(--muted); font-weight:600; line-height:1.5; margin-bottom:12px; }
+
+#fridayShow { position:fixed; inset:0; z-index:400; background:#1A0A10; display:none; flex-direction:column; align-items:center; padding:60px 22px 40px; overflow-y:auto; max-width:480px; margin:0 auto; }
+#fridayShow.visible { display:flex; }
+.show-title { font-family:var(--font-h); font-size:26px; font-weight:800; color:#fff; text-align:center; margin-bottom:4px; opacity:0; animation:fadein 0.8s 0.3s forwards; }
+.show-sub { font-size:13px; color:rgba(255,255,255,0.45); text-align:center; margin-bottom:36px; font-weight:600; opacity:0; animation:fadein 0.8s 0.6s forwards; }
+@keyframes fadein { to{opacity:1} }
+.show-bars { width:100%; display:flex; flex-direction:column; gap:16px; }
+.show-bar-row { opacity:0; }
+.show-bar-row.revealed { animation:slidein 0.55s cubic-bezier(.2,.8,.3,1) forwards; }
+@keyframes slidein { from{opacity:0;transform:translateX(-20px)} to{opacity:1;transform:none} }
+.show-bar-name { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:6px; }
+.show-name { font-family:var(--font-h); font-size:17px; font-weight:700; color:#fff; }
+.show-pts { font-family:var(--font-h); font-size:20px; font-weight:800; color:var(--rose); }
+.show-bar-bg { height:16px; background:rgba(255,255,255,0.07); border-radius:8px; overflow:hidden; }
+.show-bar-fill { height:100%; border-radius:8px; background:linear-gradient(90deg,var(--pink-deep),var(--rose)); width:0%; transition:width 1.1s cubic-bezier(.4,0,.2,1); }
+.winner-reveal { margin-top:44px; text-align:center; width:100%; opacity:0; }
+.winner-reveal.show { animation:pulsein 0.85s 0.2s cubic-bezier(.2,.8,.3,1) forwards; }
+@keyframes pulsein { 0%{opacity:0;transform:scale(0.75)} 70%{transform:scale(1.05)} 100%{opacity:1;transform:scale(1)} }
+.winner-label { font-size:12px; color:rgba(255,255,255,0.45); font-weight:800; text-transform:uppercase; letter-spacing:1px; margin-bottom:6px; }
+.winner-name-big { font-family:var(--font-h); font-size:38px; font-weight:800; color:#fff; }
+.winner-pts-big { display:inline-block; margin-top:8px; background:var(--pink); color:#fff; font-family:var(--font-h); font-size:18px; font-weight:800; padding:7px 22px; border-radius:22px; }
+.honor-box { margin-top:24px; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:13px; padding:14px 18px; width:100%; text-align:left; }
+.honor-title { font-size:11px; color:rgba(255,255,255,0.38); font-weight:800; text-transform:uppercase; letter-spacing:0.8px; margin-bottom:8px; }
+.honor-row { font-size:14px; color:rgba(255,255,255,0.75); font-weight:600; padding:5px 0; border-bottom:1px solid rgba(255,255,255,0.06); }
+.honor-row:last-child { border-bottom:none; }
+.btn-close-show { margin-top:32px; padding:14px 36px; background:rgba(255,255,255,0.09); border:1px solid rgba(255,255,255,0.18); color:#fff; border-radius:var(--radius); font-family:var(--font-b); font-size:15px; font-weight:800; cursor:pointer; }
+
+.toast { position:fixed; top:20px; left:50%; transform:translateX(-50%); background:var(--pink-deep); color:#fff; font-family:var(--font-b); font-weight:800; font-size:14px; padding:10px 22px; border-radius:22px; z-index:300; white-space:nowrap; box-shadow:0 4px 16px rgba(180,60,90,0.32); animation:toastpop 2.8s forwards; }
+@keyframes toastpop { 0%{opacity:0;transform:translateX(-50%) translateY(-12px) scale(0.92)} 12%{opacity:1;transform:translateX(-50%) translateY(0) scale(1)} 78%{opacity:1} 100%{opacity:0} }
+.empty { text-align:center; padding:40px 16px; color:var(--muted); }
+.empty p { font-size:14px; font-weight:600; line-height:1.6; }
+.realtime-dot { width:7px; height:7px; border-radius:50%; background:var(--mint); display:inline-block; margin-right:5px; animation:pulse 2s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <div id="splash"><div class="splash-title">FamilieApp</div><div class="spinner"></div></div>
+
+  <div id="onboarding">
+    <div class="ob-title">Hei! Kven er du?</div>
+    <div class="ob-sub">Vel deg sjølv, så skriv inn PIN-koden din.</div>
+    <div class="ob-grid" id="obGrid"></div>
+    <div id="pinPad">
+      <div class="pin-name" id="pinName"></div>
+      <div class="pin-dots" id="pinDots"></div>
+      <div class="pin-error" id="pinError"></div>
+      <div class="pin-grid" id="pinGrid"></div>
+      <button class="btn-back" onclick="backToNames()">Tilbake</button>
+    </div>
+  </div>
+
+  <div id="fridayShow">
+    <div class="show-title">Fredagsresultatet</div>
+    <div class="show-sub">Veke <span id="showWeekNum"></span></div>
+    <div class="show-bars" id="showBars"></div>
+    <div class="winner-reveal" id="winnerReveal">
+      <div class="winner-label">Vinnaren er</div>
+      <div class="winner-name-big" id="winnerName"></div>
+      <div class="winner-pts-big" id="winnerPtsBig"></div>
+      <div class="honor-box" id="honorBox"></div>
+    </div>
+    <button class="btn-close-show" onclick="closeFridayShow()">Lukk</button>
+  </div>
+
+  <div class="header" id="mainHeader" style="display:none">
+    <div class="header-inner">
+      <span class="app-title">FamilieApp</span>
+      <span class="header-center" id="headerCenter"></span>
+      <span class="user-chip" id="userChip" onclick="logout()"></span>
+    </div>
+  </div>
+
+  <div class="content" id="content" style="display:none"></div>
+
+  <nav class="nav" id="mainNav" style="display:none">
+    <button class="nav-btn active" onclick="switchTab('home',this)">Poeng</button>
+    <button class="nav-btn" onclick="switchTab('chores',this)">Gjeremål</button>
+    <button class="nav-btn" onclick="switchTab('tasks',this)">Oppgåver</button>
+    <button class="nav-btn" onclick="switchTab('shopping',this)">Handle</button>
+    <button class="nav-btn" id="adminNavBtn" onclick="switchTab('admin',this)" style="display:none">Admin</button>
+  </nav>
+
+  <button class="fab" id="fab">＋</button>
+  <div id="modal"></div>
+  <div id="toastEl"></div>
+</div>
+
+<script>
+const SUPA_URL = 'https://hcdtagtkyewhrbrvrbqh.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhjZHRhZ3RreWV3aHJicnZyYnFoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA2ODk0MDksImV4cCI6MjA5NjI2NTQwOX0.1Kg8MnI-ffWa5Ecc54BT_wP_mnftH9B1ZPIOoGaADfM';
+const H = {'Content-Type':'application/json','apikey':SUPA_KEY,'Authorization':'Bearer '+SUPA_KEY};
+const HR = {...H,'Prefer':'return=representation'};
+
+async function sb(path, opts={}) {
+  const r = await fetch(SUPA_URL+'/rest/v1/'+path, {headers:H,...opts});
+  if (!r.ok) { const e=await r.text(); throw new Error(e); }
+  const t = await r.text(); return t ? JSON.parse(t) : [];
+}
+
+let currentUser=null, members=[], chores=[];
+const DAYS=['søndag','måndag','tysdag','onsdag','torsdag','fredag','laurdag'];
+const TASK_TYPES=[{v:'once',l:'Ein gong'},{v:'daily',l:'Dagleg'},{v:'weekly',l:'Ukentleg'}];
+const CHORE_TYPES=[{v:'daily',l:'Per dag'},{v:'each',l:'Per gong'},{v:'per5',l:'Per 5 min'}];
+const REC_TYPES=[
+  {v:'yearly',       l:'Årlege datoar (t.d. 10. juni)'},
+  {v:'monthly',      l:'Kvar månad (same dato)'},
+  {v:'interval_months', l:'Kvar N. månad'},
+  {v:'interval_weeks',  l:'Kvar N. veke'},
+  {v:'weekly',       l:'Fast vekedag'},
+  {v:'once',         l:'Eingong (spesifikk dato)'},
+];
+
+function isFridayReveal(){const n=new Date();return n.getDay()===5&&n.getHours()>=18;}
+function dateStr(d=new Date()){return d.toISOString().slice(0,10);}
+function weekNum(d=new Date()){
+  const t=new Date(d);const day=t.getDay()||7;
+  t.setDate(t.getDate()+4-day);
+  const y=new Date(t.getFullYear(),0,1);
+  return Math.ceil(((t-y)/864e5+1)/7);
+}
+function weekKey(d=new Date()){return `${new Date(d).getFullYear()}-W${weekNum(d)}`;}
+function monthKey(d=new Date()){const t=new Date(d);return `${t.getFullYear()}-${t.getMonth()+1}`;}
+
+/* ── Check if a recurring task falls in the current week ── */
+function isThisWeek(task) {
+  const now = new Date();
+  // Start/end of current week (Monday–Sunday)
+  const dayOfWeek = now.getDay() || 7; // 1=Mon, 7=Sun
+  const monday = new Date(now); monday.setDate(now.getDate() - dayOfWeek + 1); monday.setHours(0,0,0,0);
+  const sunday = new Date(monday); sunday.setDate(monday.getDate() + 6); sunday.setHours(23,59,59,999);
+
+  const type = task.recurrence_type;
+
+  if (type === 'once') {
+    if (!task.once_date) return false;
+    const d = new Date(task.once_date);
+    return d >= monday && d <= sunday;
+  }
+
+  if (type === 'yearly') {
+    // Check if the yearly date (month/day) falls within this week
+    const m = task.month - 1; // 0-indexed
+    const day = task.day_of_month;
+    // This year
+    const thisYear = new Date(now.getFullYear(), m, day);
+    if (thisYear >= monday && thisYear <= sunday) return true;
+    // Next year edge case (week crossing year boundary)
+    const nextYear = new Date(now.getFullYear()+1, m, day);
+    return nextYear >= monday && nextYear <= sunday;
+  }
+
+  if (type === 'monthly') {
+    // Same day each month — check if that day is in this week
+    const day = task.day_of_month;
+    // Current month
+    const thisMonth = new Date(now.getFullYear(), now.getMonth(), day);
+    if (thisMonth >= monday && thisMonth <= sunday) return true;
+    // Next month
+    const nextMonth = new Date(now.getFullYear(), now.getMonth()+1, day);
+    return nextMonth >= monday && nextMonth <= sunday;
+  }
+
+  if (type === 'interval_months') {
+    if (!task.start_date || !task.interval_n) return false;
+    const start = new Date(task.start_date);
+    // Find the closest occurrence on or after start
+    let cur = new Date(start);
+    while (cur <= sunday) {
+      if (cur >= monday && cur <= sunday) return true;
+      cur.setMonth(cur.getMonth() + task.interval_n);
+    }
+    return false;
+  }
+
+  if (type === 'interval_weeks') {
+    if (!task.start_date || !task.interval_n) return false;
+    const start = new Date(task.start_date);
+    let cur = new Date(start);
+    while (cur <= sunday) {
+      if (cur >= monday && cur <= sunday) return true;
+      cur.setDate(cur.getDate() + task.interval_n * 7);
+    }
+    return false;
+  }
+
+  if (type === 'weekly') {
+    // day_of_week: 1=Mon…7=Sun (ISO)
+    const iso = task.day_of_week; // stored as 1-7
+    const target = new Date(monday);
+    target.setDate(monday.getDate() + (iso - 1));
+    return target >= monday && target <= sunday;
+  }
+
+  return false;
+}
+
+function recurrenceLabel(task) {
+  const t = task.recurrence_type;
+  const MONTH_NAMES = ['jan','feb','mar','apr','mai','jun','jul','aug','sep','okt','nov','des'];
+  if (t==='yearly') return `Kvart år ${task.day_of_month}. ${MONTH_NAMES[task.month-1]}`;
+  if (t==='monthly') return `Kvar månad ${task.day_of_month}.`;
+  if (t==='interval_months') return `Kvar ${task.interval_n}. månad`;
+  if (t==='interval_weeks') return `Kvar ${task.interval_n}. veke`;
+  if (t==='weekly') { const WD=['','man','tys','ons','tor','fre','lau','søn']; return `Kvar ${WD[task.day_of_week]}`; }
+  if (t==='once' && task.once_date) return `Eingong: ${task.once_date}`;
+  return t;
+}
+
+/* ── INIT ── */
+async function init() {
+  const splash = document.getElementById('splash');
+  const showErr = (msg) => {
+    splash.innerHTML=`<div style="padding:32px;text-align:center;max-width:340px">
+      <div style="font-family:var(--font-h);font-size:18px;font-weight:800;color:var(--pink-deep);margin-bottom:12px">Noko gjekk gale</div>
+      <div style="font-size:13px;color:var(--muted);font-weight:600;line-height:1.6;word-break:break-word">${msg}</div>
+      <button onclick="location.reload()" style="margin-top:20px;padding:12px 28px;background:var(--pink-deep);color:#fff;border:none;border-radius:12px;font-family:var(--font-b);font-size:14px;font-weight:800;cursor:pointer">Prøv igjen</button>
+    </div>`;
+  };
+
+  try {
+    members = await sb('family_members?select=*&order=id');
+  } catch(e) {
+    showErr(`Kunne ikkje laste familiemedlemmer.<br><br>${e.message}`); return;
+  }
+
+  if (!members || members.length === 0) {
+    showErr('Ingen familiemedlemmer funne i databasen.<br><br>Sjekk at tabellen <strong>family_members</strong> har data i Supabase.'); return;
+  }
+
+  try {
+    chores = await sb('family_chores?select=*&order=sort_order');
+  } catch(e) {
+    showErr(`Kunne ikkje laste gjeremål.<br><br>${e.message}`); return;
+  }
+
+  const saved = localStorage.getItem('familieapp_user');
+  if (saved) {
+    const m = members.find(x=>x.id===saved);
+    if (m) { currentUser=m; splash.style.display='none'; launchApp(); return; }
+    // Saved user not found — clear and re-login
+    localStorage.removeItem('familieapp_user');
+  }
+
+  splash.style.display='none';
+  document.getElementById('onboarding').style.display='flex';
+  renderNameList();
+}
+
+/* ── ONBOARDING / PIN ── */
+let obSelected=null, pinEntry='';
+function renderNameList(){
+  document.getElementById('obGrid').innerHTML=members.map(m=>`
+    <button class="ob-btn" id="ob_${m.id}" onclick="selectMember('${m.id}')">
+      ${m.name}<div class="ob-meta">${m.mult>1?m.mult+'× poeng':'Vaksen'}</div>
+    </button>`).join('');
+  document.getElementById('pinPad').style.display='none';
+  document.getElementById('obGrid').style.display='flex';
+  document.querySelectorAll('.ob-btn').forEach(b=>b.classList.remove('selected'));
+  pinEntry='';obSelected=null;
+}
+function selectMember(id){
+  obSelected=id;
+  document.querySelectorAll('.ob-btn').forEach(b=>b.classList.remove('selected'));
+  document.getElementById('ob_'+id)?.classList.add('selected');
+  setTimeout(()=>showPinPad(members.find(x=>x.id===id)),180);
+}
+function showPinPad(m){
+  document.getElementById('obGrid').style.display='none';
+  document.getElementById('pinPad').style.display='flex';
+  document.getElementById('pinName').textContent=m.name+' — PIN';
+  document.getElementById('pinError').textContent='';
+  pinEntry=''; renderDots();
+  document.getElementById('pinGrid').innerHTML=
+    [1,2,3,4,5,6,7,8,9,'','0','⌫'].map(k=>
+      k===''?`<div></div>`:`<button class="pin-key ${k==='⌫'?'del':''}" onclick="pinPress('${k}')">${k}</button>`
+    ).join('');
+}
+function renderDots(){
+  document.getElementById('pinDots').innerHTML=[0,1,2,3].map(i=>`<div class="pin-dot ${i<pinEntry.length?'filled':''}"></div>`).join('');
+}
+function pinPress(k){
+  if(k==='⌫'){pinEntry=pinEntry.slice(0,-1);renderDots();return;}
+  if(pinEntry.length>=4)return;
+  pinEntry+=k;renderDots();
+  if(pinEntry.length===4)checkPin();
+}
+function checkPin(){
+  const m=members.find(x=>x.id===obSelected);
+  if(pinEntry===m.pin){
+    currentUser=m;localStorage.setItem('familieapp_user',m.id);
+    document.getElementById('onboarding').style.display='none';launchApp();
+  } else {
+    document.getElementById('pinError').textContent='Feil PIN, prøv igjen';
+    pinEntry='';renderDots();
+  }
+}
+function backToNames(){renderNameList();}
+function logout(){if(!confirm('Bytte brukar?'))return;localStorage.removeItem('familieapp_user');location.reload();}
+
+/* ── LAUNCH ── */
+function launchApp(){
+  document.getElementById('mainHeader').style.display='';
+  document.getElementById('content').style.display='';
+  document.getElementById('mainNav').style.display='';
+  document.getElementById('userChip').textContent=currentUser.name;
+  const now=new Date();
+  document.getElementById('headerCenter').textContent=`${DAYS[now.getDay()]}, veke ${weekNum()}`;
+  if(currentUser.is_admin)document.getElementById('adminNavBtn').style.display='';
+  renderTab('home');
+  if(isFridayReveal())setTimeout(()=>showFridayReveal(),600);
+}
+
+/* ── TAB ROUTER ── */
+let currentTab='home';
+function switchTab(tab,btn){
+  currentTab=tab;
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active',b===btn));
+  renderTab(tab);
+}
+async function renderTab(tab){
+  const el=document.getElementById('content');
+  el.innerHTML='<div style="padding:32px;text-align:center"><div class="spinner" style="margin:0 auto"></div></div>';
+  if(tab==='home')     el.innerHTML=await renderHome();
+  if(tab==='chores')   el.innerHTML=await renderChores();
+  if(tab==='tasks')    el.innerHTML=await renderTasks();
+  if(tab==='shopping') el.innerHTML=await renderShopping();
+  if(tab==='admin')    el.innerHTML=await renderAdmin();
+  const fab=document.getElementById('fab');
+  const showFab=tab==='tasks'||tab==='shopping'||tab==='admin';
+  fab.style.display=showFab?'flex':'none';
+  if(tab==='tasks')    fab.onclick=()=>showTaskModal();
+  if(tab==='shopping') fab.onclick=()=>showShopModal();
+  if(tab==='admin')    fab.onclick=()=>showAdminAddModal();
+}
+
+/* ── HOME ── */
+async function renderHome(){
+  const wk=weekKey();const mo=monthKey();
+  const allLogs=await sb(`chore_logs?user_id=eq.${currentUser.id}&select=pts,created_at&order=created_at.desc`);
+  const myWeek=allLogs.filter(l=>weekKey(new Date(l.created_at))===wk).reduce((a,l)=>a+l.pts,0);
+  const myMonth=allLogs.filter(l=>monthKey(new Date(l.created_at))===mo).reduce((a,l)=>a+l.pts,0);
+  const myToday=allLogs.filter(l=>l.created_at.slice(0,10)===dateStr()).length;
+  const recent=await sb(`chore_logs?user_id=eq.${currentUser.id}&select=label,pts,created_at&order=created_at.desc&limit=5`);
+
+  const locked=isFridayReveal()?'':`
+    <div class="card">
+      <div class="card-title">Poengtavle</div>
+      <div class="locked-box">
+        <div class="locked-title">Skjult til fredag kl. 18</div>
+        <div class="countdown" id="countdown">—</div>
+        <div class="locked-sub">Alle poeng blir avslørt kvar fredag kveld — saman!</div>
+      </div>
+    </div>`;
+
+  const logsHtml=recent.length?recent.map(l=>{
+    const d=new Date(l.created_at);
+    return `<div class="log-item">
+      <div><div class="log-label">${l.label}</div>
+      <div class="log-time">${d.toLocaleDateString('no',{weekday:'short',day:'numeric',month:'short'})} ${d.toLocaleTimeString('no',{hour:'2-digit',minute:'2-digit'})}</div></div>
+      <div class="log-pts">+${l.pts}</div>
+    </div>`;
+  }).join(''):`<div style="color:var(--muted);font-size:13px;font-weight:600;padding:6px 0">Ingen registrerte gjeremål enno</div>`;
+
+  setTimeout(updateCountdown,100);
+  return `
+  <div class="card">
+    <div class="card-title">${currentUser.name} — denne veka</div>
+    <div class="my-score-big"><div class="my-score-num">${myWeek}</div><div class="my-score-label">poeng</div></div>
+    <div class="stat-row">
+      <div class="stat-box"><div class="stat-num">${myToday}</div><div class="stat-lbl">I dag</div></div>
+      <div class="stat-box"><div class="stat-num">${myMonth}</div><div class="stat-lbl">Månaden</div></div>
+      ${currentUser.mult>1?`<div class="stat-box"><div class="stat-num">${currentUser.mult}×</div><div class="stat-lbl">Bonus</div></div>`:''}
+    </div>
+  </div>
+  ${locked}
+  <div class="card">
+    <div class="card-title"><span><span class="realtime-dot"></span>Siste aktivitet</span></div>
+    ${logsHtml}
+  </div>`;
+}
+
+function updateCountdown(){
+  const el=document.getElementById('countdown');if(!el)return;
+  const now=new Date();const d=now.getDay();
+  const fri=new Date(now);fri.setDate(now.getDate()+(d<=5?5-d:6));fri.setHours(18,0,0,0);
+  const diff=fri-now;if(diff<=0){el.textContent='No!';return;}
+  const h=Math.floor(diff/3600000);const m=Math.floor((diff%3600000)/60000);
+  el.textContent=h>24?`${Math.floor(h/24)}d ${h%24}t`:`${h}t ${m}m`;
+  setTimeout(updateCountdown,30000);
+}
+
+/* ── FRIDAY SHOW ── */
+async function showFridayReveal(){
+  const wk=weekKey();
+  const logs=await sb(`chore_logs?select=user_id,pts,created_at`);
+  const scores=members.map(m=>({
+    ...m,week:logs.filter(l=>l.user_id===m.id&&weekKey(new Date(l.created_at))===wk).reduce((a,l)=>a+l.pts,0)
+  })).sort((a,b)=>b.week-a.week);
+  const maxPts=Math.max(...scores.map(s=>s.week),1);
+  const winner=scores[0];
+  document.getElementById('showWeekNum').textContent=weekNum();
+  document.getElementById('showBars').innerHTML=scores.map((s,i)=>`
+    <div class="show-bar-row" id="sbar_${i}">
+      <div class="show-bar-name"><span class="show-name">${s.name}</span><span class="show-pts">${s.week} p</span></div>
+      <div class="show-bar-bg"><div class="show-bar-fill" id="sbfill_${i}"></div></div>
+    </div>`).join('');
+  const honors=scores.slice(1,3).filter(s=>s.week>0);
+  document.getElementById('honorBox').innerHTML=`<div class="honor-title">Hederleg omtale</div>
+    ${honors.map((s,i)=>`<div class="honor-row">${i===0?'2.':'3.'} ${s.name} — ${s.week} poeng</div>`).join('')}
+    ${!honors.length?'<div class="honor-row" style="color:rgba(255,255,255,0.35)">Ingen aktivitet denne veka</div>':''}`;
+  document.getElementById('winnerName').textContent=winner.name;
+  document.getElementById('winnerPtsBig').textContent=winner.week+' poeng';
+  document.getElementById('fridayShow').classList.add('visible');
+  scores.forEach((s,i)=>{
+    setTimeout(()=>{
+      document.getElementById('sbar_'+i)?.classList.add('revealed');
+      setTimeout(()=>{const f=document.getElementById('sbfill_'+i);if(f)f.style.width=Math.round(s.week/maxPts*100)+'%';},100);
+    },600+i*480);
+  });
+  setTimeout(()=>document.getElementById('winnerReveal').classList.add('show'),600+scores.length*480+1300);
+}
+function closeFridayShow(){document.getElementById('fridayShow').classList.remove('visible');}
+
+/* ── CHORES ── */
+async function renderChores(){
+  // Regular chores — logged today?
+  const todayLogs=await sb(`chore_logs?user_id=eq.${currentUser.id}&created_at=gte.${dateStr()}T00:00:00&select=chore_id`);
+  const todayIds=new Set(todayLogs.map(l=>l.chore_id));
+
+  // Recurring tasks due this week — logged this week?
+  const allRec=await sb('recurring_tasks?active=eq.true&select=*&order=created_at');
+  const dueThisWeek=allRec.filter(t=>isThisWeek(t));
+
+  const wk=weekKey();
+  const weekLogs=await sb(`chore_logs?user_id=eq.${currentUser.id}&select=chore_id,created_at`);
+  const loggedThisWeekIds=new Set(
+    weekLogs.filter(l=>weekKey(new Date(l.created_at))===wk).map(l=>l.chore_id)
+  );
+
+  const bonus=currentUser.mult>1?`<p style="font-size:13px;color:var(--pink-deep);font-weight:700;margin-bottom:12px;padding:9px 12px;background:var(--pink-light);border-radius:9px;">${currentUser.name} får ${currentUser.mult}× poeng for alt!</p>`:'';
+
+  const regularHtml=chores.map(c=>{
+    const done=c.type==='daily'&&todayIds.has(c.id);
+    const effPts=c.pts*currentUser.mult;
+    return `<div class="chore-item">
+      <div class="chore-info">
+        <div class="chore-label">${c.label}</div>
+        <div class="chore-meta">${effPts} p ${c.type==='daily'?'per dag':c.type==='each'?'per gong':'per 5 min'}</div>
+      </div>
+      <div class="chore-right">
+        ${c.type==='per5'?`<input class="min-input" type="number" min="5" step="5" placeholder="min" id="min_${c.id}" oninput="previewPts('${c.id}',${c.pts},${currentUser.mult})"><span class="pts-preview" id="prev_${c.id}">0 p</span>`:''}
+        <button class="btn-log ${done?'done':''}" onclick="${done?'':c.type==='per5'?`logPer5('${c.id}','${c.label}',${c.pts})`:`logChore('${c.id}','${c.label}',${c.pts})`}">
+          ${done?'Gjort':c.type==='per5'?'Logg':'Registrer'}
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+
+  const recurringHtml = dueThisWeek.length ? `
+    <div style="margin-top:18px; border-top:1px solid var(--border); padding-top:14px;">
+      <div style="font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.6px;color:var(--muted);margin-bottom:10px;">Denne veka</div>
+      ${dueThisWeek.map(t=>{
+        const done=loggedThisWeekIds.has(t.id);
+        const effPts=t.pts*currentUser.mult;
+        const assignedTo=t.assigned_to?members.find(m=>m.id===t.assigned_to):null;
+        const isForMe=!t.assigned_to||t.assigned_to===currentUser.id;
+        return `<div class="chore-item" style="${!isForMe?'opacity:0.5':''}">
+          <div class="chore-info">
+            <div class="chore-label">${t.title}</div>
+            <div class="recurring-badge">${recurrenceLabel(t)}</div>
+            <div class="chore-meta" style="margin-top:4px">${effPts} p${assignedTo?' · '+assignedTo.name:' · Felles'}</div>
+          </div>
+          <div class="chore-right">
+            <button class="btn-log ${done?'done':''}" onclick="${done||!isForMe?'':``logRecurring('${t.id}','${t.title}',${t.pts})``}">
+              ${done?'Gjort':isForMe?'Registrer':'—'}
+            </button>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>` : '';
+
+  return `<div class="card">
+    <div class="card-title">Logg gjeremål</div>
+    ${bonus}
+    ${regularHtml}
+    ${recurringHtml}
+  </div>`;
+}
+
+function previewPts(id,base,mult){
+  const min=Number(document.getElementById('min_'+id)?.value||0);
+  const el=document.getElementById('prev_'+id);if(el)el.textContent=(Math.round(min/5)*base*mult)+' p';
+}
+async function logChore(choreId,label,basePts){
+  const earned=basePts*currentUser.mult;
+  await sb('chore_logs',{method:'POST',headers:HR,body:JSON.stringify({user_id:currentUser.id,chore_id:choreId,label,pts:earned})});
+  toast(`+${earned} poeng!`);renderTab('chores');
+}
+async function logPer5(choreId,label,basePts){
+  const min=Number(document.getElementById('min_'+choreId)?.value||0);
+  if(!min||min<5){toast('Skriv inn minuttar (min. 5)');return;}
+  const earned=Math.round(min/5)*basePts*currentUser.mult;
+  await sb('chore_logs',{method:'POST',headers:HR,body:JSON.stringify({user_id:currentUser.id,chore_id:choreId,label,pts:earned,minutes:min})});
+  toast(`+${earned} poeng for ${min} min!`);renderTab('chores');
+}
+async function logRecurring(taskId,label,basePts){
+  const earned=basePts*currentUser.mult;
+  await sb('chore_logs',{method:'POST',headers:HR,body:JSON.stringify({user_id:currentUser.id,chore_id:taskId,label,pts:earned})});
+  toast(`+${earned} poeng!`);renderTab('chores');
+}
+
+/* ── TASKS ── */
+async function renderTasks(){
+  const all=await sb(`tasks?select=*&order=created_at.desc`);
+  const mine=all.filter(t=>t.assigned_to===currentUser.id);
+  const shared=all.filter(t=>!t.assigned_to);
+  if(!mine.length&&!shared.length)return`<div class="empty"><p>Ingen oppgåver enno.<br>Trykk + for å leggje til.</p></div>`;
+  const rt=t=>{
+    const m=t.assigned_to?members.find(x=>x.id===t.assigned_to):null;
+    const tl=TASK_TYPES.find(x=>x.v===t.type)?.l||'';
+    return`<div class="task-item">
+      <button class="task-check ${t.done?'checked':''}" onclick="toggleTask('${t.id}',${!t.done})">${t.done?'✓':''}</button>
+      <div class="task-body">
+        <div class="task-title ${t.done?'done':''}">${t.title}</div>
+        <div class="task-meta">
+          <span class="pill pill-grey">${tl}</span>
+          ${t.due_date?`<span class="pill pill-grey">${t.due_date}</span>`:''}
+          ${m?`<span class="pill pill-pink">${m.name}</span>`:`<span class="pill pill-grey">Felles</span>`}
+          ${t.pts?`<span class="pill pill-gold">+${t.pts}p</span>`:''}
+        </div>
+      </div>
+    </div>`;
+  };
+  let h='';
+  if(mine.length)h+=`<div class="card"><div class="card-title">Mine oppgåver</div>${mine.map(rt).join('')}</div>`;
+  if(shared.length)h+=`<div class="card"><div class="card-title">Felles</div>${shared.map(rt).join('')}</div>`;
+  return h;
+}
+async function toggleTask(id,done){
+  await sb(`tasks?id=eq.${id}`,{method:'PATCH',headers:HR,body:JSON.stringify({done})});
+  renderTab('tasks');
+}
+
+/* ── SHOPPING ── */
+async function renderShopping(){
+  const lists=await sb(`shopping_lists?select=*,shopping_items(*)&order=created_at.desc`);
+  if(!lists.length)return`<div class="empty"><p>Ingen handlelister.<br>Trykk + for å opprette.</p></div>`;
+  return lists.map(list=>{
+    const items=list.shopping_items||[];
+    const done=items.filter(i=>i.done).length;
+    const pct=items.length?Math.round(done/items.length*100):0;
+    return`<div class="card">
+      <div class="card-title">${list.title}</div>
+      <div class="prog-row"><div class="prog-bg"><div class="prog-fill" style="width:${pct}%"></div></div><span class="prog-text">${done}/${items.length}</span></div>
+      ${items.sort((a,b)=>a.sort_order-b.sort_order).map(item=>`
+        <div class="shop-item">
+          <button class="shop-check ${item.done?'checked':''}" onclick="toggleShopItem('${item.id}',${!item.done})">${item.done?'✓':''}</button>
+          <span class="shop-label ${item.done?'done':''}">${item.name}</span>
+          ${item.qty?`<span class="shop-qty">${item.qty}</span>`:''}
+        </div>`).join('')}
+      <div class="add-row">
+        <input class="add-input" id="si_${list.id}" placeholder="Legg til vare" onkeydown="if(event.key==='Enter')addShopItem('${list.id}')">
+        <button class="btn-sm" onclick="addShopItem('${list.id}')">+</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+async function toggleShopItem(id,done){
+  await sb(`shopping_items?id=eq.${id}`,{method:'PATCH',headers:HR,body:JSON.stringify({done})});renderTab('shopping');
+}
+async function addShopItem(listId){
+  const inp=document.getElementById('si_'+listId);const v=inp?.value.trim();if(!v)return;
+  await sb('shopping_items',{method:'POST',headers:HR,body:JSON.stringify({list_id:listId,name:v,qty:'',done:false})});
+  renderTab('shopping');
+}
+
+/* ── ADMIN ── */
+async function renderAdmin(){
+  const fresh=await sb('family_chores?select=*&order=sort_order');
+  chores=fresh;
+  const recTasks=await sb('recurring_tasks?active=eq.true&select=*&order=created_at');
+  const choreTypeLabel=v=>CHORE_TYPES.find(t=>t.v===v)?.l||v;
+  return`
+  <div class="card">
+    <div class="card-title">Daglege gjeremål <span class="card-action" onclick="showChoreModal()">+ Nytt</span></div>
+    <div class="admin-note">Faste gjeremål som kan loggast kvar dag.</div>
+    ${chores.map(c=>`
+      <div class="admin-row">
+        <div><div class="admin-name">${c.label}</div><div class="admin-meta">${c.pts} p · ${choreTypeLabel(c.type)}</div></div>
+        <button class="btn-del" onclick="deleteChore('${c.id}','${c.label}')">Slett</button>
+      </div>`).join('')}
+  </div>
+  <div class="card">
+    <div class="card-title">Tilbakevendande oppgåver <span class="card-action" onclick="showRecurringModal()">+ Ny</span></div>
+    <div class="admin-note">Dukkar opp i gjeremålslista berre den veka dei skal gjerast.</div>
+    ${recTasks.length?recTasks.map(t=>`
+      <div class="admin-row">
+        <div>
+          <div class="admin-name">${t.title}</div>
+          <div class="admin-meta">${recurrenceLabel(t)}${t.assigned_to?' · '+(members.find(m=>m.id===t.assigned_to)?.name||''):'· Felles'}</div>
+        </div>
+        <button class="btn-del" onclick="deleteRecurring('${t.id}','${t.title}')">Slett</button>
+      </div>`).join(''):`<div style="color:var(--muted);font-size:13px;font-weight:600;padding:8px 0">Ingen enno</div>`}
+  </div>
+  <div class="card">
+    <div class="card-title">Familiemedlemmer</div>
+    ${members.map(m=>`
+      <div class="admin-row">
+        <div class="admin-name">${m.name}</div>
+        <div class="admin-meta">${m.mult}× · ${m.is_admin?'Admin':'Brukar'}</div>
+      </div>`).join('')}
+  </div>`;
+}
+
+function showAdminAddModal(){
+  // FAB in admin opens a choice
+  document.getElementById('modal').innerHTML=`
+  <div class="backdrop" onclick="if(event.target===this)closeModal()">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-title">Kva vil du leggje til?</div>
+      <button class="btn-save" style="margin-bottom:10px" onclick="closeModal();showChoreModal()">Dagleg gjeremål</button>
+      <button class="btn-save" style="background:var(--gold);color:var(--charcoal)" onclick="closeModal();showRecurringModal()">Tilbakevendande oppgåve</button>
+      <button class="btn-cancel-s" onclick="closeModal()">Avbryt</button>
+    </div>
+  </div>`;
+}
+
+async function deleteChore(id,label){
+  if(!confirm(`Slette "${label}"?`))return;
+  await sb(`family_chores?id=eq.${id}`,{method:'DELETE',headers:H});
+  chores=await sb('family_chores?select=*&order=sort_order');
+  toast('Gjeremål sletta');renderTab('admin');
+}
+async function deleteRecurring(id,title){
+  if(!confirm(`Slette "${title}"?`))return;
+  await sb(`recurring_tasks?id=eq.${id}`,{method:'PATCH',headers:HR,body:JSON.stringify({active:false})});
+  toast('Oppgåve sletta');renderTab('admin');
+}
+
+/* ── MODALS ── */
+function showChoreModal(){
+  document.getElementById('modal').innerHTML=`
+  <div class="backdrop" onclick="if(event.target===this)closeModal()">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-title">Nytt dagleg gjeremål</div>
+      <div class="field"><label>Namn</label><input id="cN" placeholder="t.d. Støvsuge stova"></div>
+      <div class="field-row">
+        <div class="field"><label>Poeng (basis)</label><input type="number" id="cP" value="5" min="1"></div>
+        <div class="field"><label>Type</label><select id="cT">${CHORE_TYPES.map(t=>`<option value="${t.v}">${t.l}</option>`).join('')}</select></div>
+      </div>
+      <p class="hint">Poeng blir automatisk multiplisert per person (Tida/Tale 2×, Emmi 10×).</p>
+      <button class="btn-save" onclick="saveChore()">Legg til</button>
+      <button class="btn-cancel-s" onclick="closeModal()">Avbryt</button>
+    </div>
+  </div>`;
+}
+async function saveChore(){
+  const label=document.getElementById('cN')?.value.trim();if(!label){toast('Skriv inn namn');return;}
+  const pts=Number(document.getElementById('cP')?.value||5);
+  const type=document.getElementById('cT')?.value||'each';
+  const maxOrder=chores.length?Math.max(...chores.map(c=>c.sort_order||0)):0;
+  await sb('family_chores',{method:'POST',headers:HR,body:JSON.stringify({label,pts,type,sort_order:maxOrder+1})});
+  chores=await sb('family_chores?select=*&order=sort_order');
+  closeModal();toast('Gjeremål lagt til!');renderTab('admin');
+}
+
+function showRecurringModal(){
+  document.getElementById('modal').innerHTML=`
+  <div class="backdrop" onclick="if(event.target===this)closeModal()">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-title">Ny tilbakevendande oppgåve</div>
+      <div class="field"><label>Tittel</label><input id="rT" placeholder="t.d. Bytte filter ventilasjonsaggregat"></div>
+      <div class="field-row">
+        <div class="field"><label>Poeng</label><input type="number" id="rP" value="10" min="1"></div>
+        <div class="field"><label>Tildel til</label>
+          <select id="rA"><option value="">Felles</option>${members.map(m=>`<option value="${m.id}">${m.name}</option>`).join('')}</select>
+        </div>
+      </div>
+      <div class="field"><label>Type</label>
+        <select id="rRt" onchange="updateRecurringFields()">
+          ${REC_TYPES.map(t=>`<option value="${t.v}">${t.l}</option>`).join('')}
+        </select>
+      </div>
+      <div id="recurringFields"></div>
+      <button class="btn-save" onclick="saveRecurring()">Legg til</button>
+      <button class="btn-cancel-s" onclick="closeModal()">Avbryt</button>
+    </div>
+  </div>`;
+  updateRecurringFields();
+}
+
+function updateRecurringFields(){
+  const type=document.getElementById('rRt')?.value;
+  const el=document.getElementById('recurringFields');
+  if(!el)return;
+  const MONTH_NAMES=['Januar','Februar','Mars','April','Mai','Juni','Juli','August','September','Oktober','November','Desember'];
+  const WD_NAMES=['Måndag','Tysdag','Onsdag','Torsdag','Fredag','Laurdag','Sundag'];
+  if(type==='yearly') el.innerHTML=`
+    <div class="field-row">
+      <div class="field"><label>Månad</label><select id="rMo">${MONTH_NAMES.map((n,i)=>`<option value="${i+1}">${n}</option>`).join('')}</select></div>
+      <div class="field"><label>Dag i månaden</label><input type="number" id="rDom" value="1" min="1" max="31"></div>
+    </div>`;
+  else if(type==='monthly') el.innerHTML=`
+    <div class="field"><label>Dag i månaden</label><input type="number" id="rDom" value="1" min="1" max="31" placeholder="t.d. 15"></div>`;
+  else if(type==='interval_months') el.innerHTML=`
+    <div class="field-row">
+      <div class="field"><label>Kvar N. månad</label><input type="number" id="rN" value="3" min="1"></div>
+      <div class="field"><label>Startdato</label><input type="date" id="rSd" value="${dateStr()}"></div>
+    </div>`;
+  else if(type==='interval_weeks') el.innerHTML=`
+    <div class="field-row">
+      <div class="field"><label>Kvar N. veke</label><input type="number" id="rN" value="4" min="1"></div>
+      <div class="field"><label>Startdato</label><input type="date" id="rSd" value="${dateStr()}"></div>
+    </div>`;
+  else if(type==='weekly') el.innerHTML=`
+    <div class="field"><label>Kva dag</label><select id="rDow">${WD_NAMES.map((n,i)=>`<option value="${i+1}">${n}</option>`).join('')}</select></div>`;
+  else if(type==='once') el.innerHTML=`
+    <div class="field"><label>Dato</label><input type="date" id="rOd" value="${dateStr()}"></div>`;
+  else el.innerHTML='';
+}
+
+async function saveRecurring(){
+  const title=document.getElementById('rT')?.value.trim();if(!title){toast('Skriv inn tittel');return;}
+  const pts=Number(document.getElementById('rP')?.value||10);
+  const type=document.getElementById('rRt')?.value;
+  const assigned_to=document.getElementById('rA')?.value||null;
+  const body={title,pts,recurrence_type:type,assigned_to:assigned_to||null,active:true};
+  if(type==='yearly'){ body.month=Number(document.getElementById('rMo')?.value); body.day_of_month=Number(document.getElementById('rDom')?.value); }
+  if(type==='monthly'){ body.day_of_month=Number(document.getElementById('rDom')?.value); }
+  if(type==='interval_months'||type==='interval_weeks'){ body.interval_n=Number(document.getElementById('rN')?.value); body.start_date=document.getElementById('rSd')?.value; }
+  if(type==='weekly'){ body.day_of_week=Number(document.getElementById('rDow')?.value); }
+  if(type==='once'){ body.once_date=document.getElementById('rOd')?.value; }
+  await sb('recurring_tasks',{method:'POST',headers:HR,body:JSON.stringify(body)});
+  closeModal();toast('Oppgåve lagt til!');renderTab('admin');
+}
+
+function showTaskModal(){
+  document.getElementById('modal').innerHTML=`
+  <div class="backdrop" onclick="if(event.target===this)closeModal()">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-title">Ny oppgåve</div>
+      <div class="field"><label>Tittel</label><input id="mT" placeholder="Kva skal gjerast?"></div>
+      <div class="field"><label>Type</label>
+        <div class="type-row">
+          ${TASK_TYPES.map(t=>`<button class="type-chip ${t.v==='once'?'active':''}" onclick="selType(this,'${t.v}')">${t.l}</button>`).join('')}
+          <input type="hidden" id="mTy" value="once">
+        </div>
+      </div>
+      <div class="field"><label>Tildel til</label>
+        <select id="mAs"><option value="">Felles (alle)</option>${members.map(m=>`<option value="${m.id}">${m.name}</option>`).join('')}</select>
+      </div>
+      <div class="field" id="mDF"><label>Frist</label><input type="date" id="mDu"></div>
+      <div class="field"><label>Poeng</label><input type="number" id="mPt" value="10" min="0"></div>
+      <button class="btn-save" onclick="saveTask()">Lagre</button>
+      <button class="btn-cancel-s" onclick="closeModal()">Avbryt</button>
+    </div>
+  </div>`;
+}
+function selType(btn,val){
+  btn.closest('.type-row').querySelectorAll('.type-chip').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');document.getElementById('mTy').value=val;
+  const df=document.getElementById('mDF');if(df)df.style.display=val==='once'?'block':'none';
+}
+async function saveTask(){
+  const title=document.getElementById('mT')?.value.trim();if(!title){toast('Skriv inn tittel');return;}
+  await sb('tasks',{method:'POST',headers:HR,body:JSON.stringify({
+    title,type:document.getElementById('mTy')?.value||'once',
+    assigned_to:document.getElementById('mAs')?.value||null,
+    due_date:document.getElementById('mDu')?.value||null,
+    pts:Number(document.getElementById('mPt')?.value||0),done:false
+  })});
+  closeModal();toast('Oppgåve lagt til');renderTab('tasks');
+}
+
+function showShopModal(){
+  document.getElementById('modal').innerHTML=`
+  <div class="backdrop" onclick="if(event.target===this)closeModal()">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-title">Ny handleliste</div>
+      <div class="field"><label>Namn</label><input id="sT" placeholder="t.d. Vekehandel"></div>
+      <div class="field"><label>Varer (éi per linje)</label><textarea id="sI" placeholder="Mjølk&#10;Brød&#10;Egg"></textarea></div>
+      <button class="btn-save" onclick="saveShop()">Opprett</button>
+      <button class="btn-cancel-s" onclick="closeModal()">Avbryt</button>
+    </div>
+  </div>`;
+}
+async function saveShop(){
+  const title=document.getElementById('sT')?.value.trim();if(!title){toast('Skriv inn namn');return;}
+  const list=await sb('shopping_lists',{method:'POST',headers:HR,body:JSON.stringify({title})});
+  const listId=list[0].id;
+  const raw=document.getElementById('sI')?.value||'';
+  const items=raw.split('\n').map(s=>s.trim()).filter(Boolean).map((n,i)=>({list_id:listId,name:n,qty:'',done:false,sort_order:i}));
+  if(items.length)await sb('shopping_items',{method:'POST',headers:HR,body:JSON.stringify(items)});
+  closeModal();toast('Handleliste oppretta');renderTab('shopping');
+}
+
+function closeModal(){document.getElementById('modal').innerHTML='';}
+
+let _tt;
+function toast(msg){
+  clearTimeout(_tt);
+  document.getElementById('toastEl').innerHTML=`<div class="toast">${msg}</div>`;
+  _tt=setTimeout(()=>{document.getElementById('toastEl').innerHTML='';},2900);
+}
+
+init();
+</script>
+</body>
+</html>
