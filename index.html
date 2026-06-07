@@ -261,9 +261,18 @@ const H = {'Content-Type':'application/json','apikey':SUPA_KEY,'Authorization':'
 const HR = {...H,'Prefer':'return=representation'};
 
 async function sb(path, opts={}) {
-  const r = await fetch(SUPA_URL+'/rest/v1/'+path, {headers:H,...opts});
-  if (!r.ok) { const e=await r.text(); throw new Error(e); }
-  const t = await r.text(); return t ? JSON.parse(t) : [];
+  const controller = new AbortController();
+  const tid = setTimeout(() => controller.abort(), 8000);
+  try {
+    const r = await fetch(SUPA_URL+'/rest/v1/'+path, {headers:H, signal:controller.signal, ...opts});
+    clearTimeout(tid);
+    if (!r.ok) { const e=await r.text(); throw new Error("HTTP "+r.status+": "+e); }
+    const t = await r.text(); return t ? JSON.parse(t) : [];
+  } catch(e) {
+    clearTimeout(tid);
+    if (e.name === "AbortError") throw new Error("Tidsavbrot — fekk ikkje svar frå Supabase etter 8 sek");
+    throw e;
+  }
 }
 
 let currentUser=null, members=[], chores=[];
