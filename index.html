@@ -54,8 +54,8 @@ body { font-family:var(--font-b); color:var(--text); overflow:hidden; }
 .header-center { flex:1; text-align:center; font-size:12px; color:rgba(255,255,255,0.8); font-weight:700; }
 .user-chip { background:rgba(255,255,255,0.22); border:1px solid rgba(255,255,255,0.35); color:#fff; font-size:13px; font-weight:800; padding:5px 13px; border-radius:20px; cursor:pointer; font-family:var(--font-b); }
 
-.nav { display:flex; background:var(--card); border-top:1px solid var(--border); flex-shrink:0; z-index:10; box-shadow:0 -1px 6px rgba(0,0,0,0.05); }
-.nav-btn { flex:1; padding:10px 4px 8px; border:none; background:none; font-family:var(--font-b); font-size:11px; font-weight:800; color:var(--muted); cursor:pointer; text-transform:uppercase; letter-spacing:0.4px; position:relative; transition:color 0.15s; }
+.nav { display:flex; background:var(--card); border-top:1px solid var(--border); flex-shrink:0; z-index:10; box-shadow:0 -1px 6px rgba(0,0,0,0.05); min-height:64px; }
+.nav-btn { flex:1; padding:14px 3px 12px; border:none; background:none; font-family:var(--font-b); font-size:10px; font-weight:800; color:var(--muted); cursor:pointer; text-transform:uppercase; letter-spacing:0.3px; position:relative; transition:color 0.15s; line-height:1.3; }
 .nav-btn.active { color:var(--pink-deep); }
 .nav-btn.active::after { content:''; position:absolute; top:0; left:20%; right:20%; height:2px; background:var(--pink-deep); border-radius:0 0 3px 3px; }
 
@@ -199,6 +199,49 @@ body { font-family:var(--font-b); color:var(--text); overflow:hidden; }
 .empty p { font-size:14px; font-weight:600; line-height:1.6; }
 .realtime-dot { width:7px; height:7px; border-radius:50%; background:var(--mint); display:inline-block; margin-right:5px; animation:pulse 2s infinite; }
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+/* ── Chat ── */
+.chat-wrap { display:flex; flex-direction:column; height:100%; }
+.chat-messages { flex:1; overflow-y:auto; padding:4px 2px 8px; display:flex; flex-direction:column; gap:8px; }
+.chat-day-divider { text-align:center; font-size:11px; font-weight:800; color:var(--muted); text-transform:uppercase; letter-spacing:0.5px; margin:14px 0 6px; }
+.chat-bubble-row { display:flex; flex-direction:column; max-width:78%; }
+.chat-bubble-row.mine { align-self:flex-end; align-items:flex-end; }
+.chat-bubble-row.theirs { align-self:flex-start; align-items:flex-start; }
+.chat-sender { font-size:11px; font-weight:800; color:var(--muted); margin-bottom:2px; padding:0 4px; }
+.chat-bubble { padding:10px 14px; border-radius:18px; font-size:14px; font-weight:600; line-height:1.4; word-break:break-word; }
+.chat-bubble-row.mine .chat-bubble { background:var(--pink-deep); color:#fff; border-bottom-right-radius:5px; }
+.chat-bubble-row.theirs .chat-bubble { background:var(--card); color:var(--charcoal); border:1px solid var(--border); border-bottom-left-radius:5px; }
+.chat-time { font-size:10px; color:var(--muted); font-weight:600; margin-top:2px; padding:0 4px; }
+.chat-input-row { display:flex; gap:8px; padding:10px 0 0; flex-shrink:0; }
+.chat-input { flex:1; background:var(--soft); border:1.5px solid var(--border); color:var(--text); border-radius:22px; font-family:var(--font-b); font-size:15px; padding:11px 16px; }
+.chat-input:focus { outline:none; border-color:var(--pink); }
+.chat-send { background:var(--pink-deep); color:#fff; border:none; border-radius:50%; width:44px; height:44px; font-size:18px; cursor:pointer; flex-shrink:0; display:flex; align-items:center; justify-content:center; }
+.chat-send:active { transform:scale(0.93); }
+.chat-empty { text-align:center; padding:40px 16px; color:var(--muted); font-size:14px; font-weight:600; }
+
+/* ── Date picker for past-day logging ── */
+.date-bar { display:flex; align-items:center; gap:8px; margin-bottom:14px; }
+.date-bar-btn { background:var(--soft); border:1.5px solid var(--border); color:var(--charcoal); border-radius:11px; font-family:var(--font-b); font-weight:800; font-size:13px; padding:9px 14px; cursor:pointer; flex:1; text-align:center; }
+.date-bar-btn:active { background:var(--pink-light); border-color:var(--pink); }
+.date-bar-btn.today { background:var(--pink-light); border-color:var(--pink); color:var(--pink-deep); }
+.date-arrow { background:var(--soft); border:1.5px solid var(--border); color:var(--charcoal); border-radius:11px; width:40px; height:40px; font-size:16px; font-weight:800; cursor:pointer; flex-shrink:0; display:flex; align-items:center; justify-content:center; }
+.date-arrow:active { background:var(--pink-light); }
+.date-arrow:disabled { opacity:0.3; cursor:default; }
+
+/* ── Stats / graph ── */
+.stats-period-row { display:flex; gap:6px; margin-bottom:16px; flex-wrap:wrap; }
+.stats-period-btn { flex:1; min-width:60px; padding:10px 8px; background:var(--soft); border:1.5px solid var(--border); border-radius:11px; font-family:var(--font-b); font-size:12px; font-weight:800; color:var(--muted); cursor:pointer; text-align:center; transition:all 0.15s; }
+.stats-period-btn.active { background:var(--pink-light); color:var(--pink-deep); border-color:var(--pink); }
+.stats-legend { display:flex; flex-wrap:wrap; gap:10px; margin-top:14px; padding-top:14px; border-top:1px solid var(--border); }
+.stats-legend-item { display:flex; align-items:center; gap:6px; font-size:12px; font-weight:700; color:var(--charcoal); }
+.stats-legend-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+.stats-locked-note { font-size:12px; color:var(--muted); font-weight:600; text-align:center; margin-top:10px; padding:8px; background:var(--soft); border-radius:8px; }
+.stats-svg-wrap { width:100%; overflow-x:auto; }
+.stats-totals { display:flex; flex-direction:column; gap:8px; margin-top:14px; }
+.stats-total-row { display:flex; align-items:center; gap:10px; padding:8px 0; }
+.stats-total-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+.stats-total-name { flex:1; font-size:13px; font-weight:700; color:var(--charcoal); }
+.stats-total-num { font-family:var(--font-h); font-size:16px; font-weight:800; color:var(--charcoal); }
 </style>
 </head>
 <body>
@@ -244,8 +287,10 @@ body { font-family:var(--font-b); color:var(--text); overflow:hidden; }
   <nav class="nav" id="mainNav" style="display:none">
     <button class="nav-btn active" onclick="switchTab('home',this)">Poeng</button>
     <button class="nav-btn" onclick="switchTab('chores',this)">Gjeremål</button>
+    <button class="nav-btn" onclick="switchTab('stats',this)">Statistikk</button>
     <button class="nav-btn" onclick="switchTab('tasks',this)">Oppgåver</button>
     <button class="nav-btn" onclick="switchTab('shopping',this)">Handle</button>
+    <button class="nav-btn" onclick="switchTab('chat',this)">Chat</button>
     <button class="nav-btn" id="adminNavBtn" onclick="switchTab('admin',this)" style="display:none">Admin</button>
   </nav>
 
@@ -276,6 +321,11 @@ async function sb(path, opts={}) {
 }
 
 let currentUser=null, members=[], chores=[];
+const MEMBER_COLORS = ['#D4607E','#6DBF99','#E8B84B','#7A8FD4','#C77DD4','#5BA3C7'];
+function memberColor(memberId){
+  const idx = members.findIndex(m=>m.id===memberId);
+  return MEMBER_COLORS[idx % MEMBER_COLORS.length] || '#999';
+}
 const DAYS=['søndag','måndag','tysdag','onsdag','torsdag','fredag','laurdag'];
 const TASK_TYPES=[{v:'once',l:'Ein gong'},{v:'daily',l:'Dagleg'},{v:'weekly',l:'Ukentleg'}];
 const CHORE_TYPES=[{v:'daily',l:'Per dag'},{v:'each',l:'Per gong'},{v:'per5',l:'Per 5 min'}];
@@ -300,8 +350,8 @@ function weekKey(d=new Date()){return `${new Date(d).getFullYear()}-W${weekNum(d
 function monthKey(d=new Date()){const t=new Date(d);return `${t.getFullYear()}-${t.getMonth()+1}`;}
 
 /* ── Check if a recurring task falls in the current week ── */
-function isThisWeek(task) {
-  const now = new Date();
+function isThisWeek(task, refDate) {
+  const now = refDate || new Date();
   // Start/end of current week (Monday–Sunday)
   const dayOfWeek = now.getDay() || 7; // 1=Mon, 7=Sun
   const monday = new Date(now); monday.setDate(now.getDate() - dayOfWeek + 1); monday.setHours(0,0,0,0);
@@ -506,9 +556,12 @@ async function renderTab(tab){
   el.innerHTML='<div style="padding:32px;text-align:center"><div class="spinner" style="margin:0 auto"></div></div>';
   if(tab==='home')     el.innerHTML=await renderHome();
   if(tab==='chores')   el.innerHTML=await renderChores();
+  if(tab==='stats')    el.innerHTML=await renderStats();
   if(tab==='tasks')    el.innerHTML=await renderTasks();
   if(tab==='shopping') el.innerHTML=await renderShopping();
   if(tab==='admin')    el.innerHTML=await renderAdmin();
+  if(tab==='chat')      { el.innerHTML=await renderChat(); setupChatRealtime(); scrollChatToBottom(); }
+  else { teardownChatRealtime(); }
   const fab=document.getElementById('fab');
   const showFab=tab==='tasks'||tab==='shopping'||tab==='admin';
   fab.style.display=showFab?'flex':'none';
@@ -563,6 +616,157 @@ async function renderHome(){
   </div>`;
 }
 
+/* ── STATS / GRAF ── */
+let statsPeriod = 'w8'; // w4, w8, w12, m6, m12
+
+function statsPeriodConfig(p){
+  if (p==='w4')  return {unit:'week',  count:4};
+  if (p==='w8')  return {unit:'week',  count:8};
+  if (p==='w12') return {unit:'week',  count:12};
+  if (p==='m6')  return {unit:'month', count:6};
+  if (p==='m12') return {unit:'month', count:12};
+  return {unit:'week', count:8};
+}
+
+function setStatsPeriod(p){ statsPeriod=p; renderTab('stats'); }
+
+async function renderStats(){
+  const cfg = statsPeriodConfig(statsPeriod);
+  const now = new Date();
+  const currentWk = weekKey(now);
+  const fridayUnlocked = isFridayReveal();
+
+  // Build list of period buckets (oldest to newest)
+  const buckets = []; // {key, label, isCurrentAndLocked}
+  if (cfg.unit==='week') {
+    for (let i=cfg.count-1; i>=0; i--) {
+      const d = new Date(now); d.setDate(d.getDate() - i*7);
+      const key = weekKey(d);
+      const locked = (key===currentWk) && !fridayUnlocked;
+      buckets.push({ key, label:'V'+weekNum(d), locked });
+    }
+  } else {
+    for (let i=cfg.count-1; i>=0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth()-i, 1);
+      const key = monthKey(d);
+      const isCurrentMonth = (key===monthKey(now));
+      const locked = isCurrentMonth && !fridayUnlocked;
+      const MN=['jan','feb','mar','apr','mai','jun','jul','aug','sep','okt','nov','des'];
+      buckets.push({ key, label:MN[d.getMonth()], locked });
+    }
+  }
+
+  // Fetch all logs once
+  const logs = await sb('chore_logs?select=user_id,pts,created_at');
+
+  // Aggregate per member per bucket
+  const series = members.map(m => {
+    const values = buckets.map(b => {
+      if (b.locked) return null; // hidden
+      const sum = logs.filter(l => l.user_id===m.id && (cfg.unit==='week' ? weekKey(new Date(l.created_at))===b.key : monthKey(new Date(l.created_at))===b.key)).reduce((a,l)=>a+l.pts,0);
+      return sum;
+    });
+    return { member:m, values };
+  });
+
+  const maxVal = Math.max(1, ...series.flatMap(s=>s.values.filter(v=>v!==null)));
+
+  const periodButtons = [
+    {v:'w4',l:'4 v'},{v:'w8',l:'8 v'},{v:'w12',l:'12 v'},{v:'m6',l:'6 mnd'},{v:'m12',l:'12 mnd'}
+  ].map(p=>`<button class="stats-period-btn ${statsPeriod===p.v?'active':''}" onclick="setStatsPeriod('${p.v}')">${p.l}</button>`).join('');
+
+  const svg = buildLineChartSVG(buckets, series, maxVal);
+
+  const totals = members.map(m=>{
+    const total = buckets.reduce((sum,b,i)=>{
+      const v = series.find(s=>s.member.id===m.id)?.values[i];
+      return sum + (v||0);
+    },0);
+    return {member:m, total};
+  }).sort((a,b)=>b.total-a.total);
+
+  const lockedCount = buckets.filter(b=>b.locked).length;
+
+  return `<div class="card">
+    <div class="card-title">Poengutvikling</div>
+    <div class="stats-period-row">${periodButtons}</div>
+    <div class="stats-svg-wrap">${svg}</div>
+    ${lockedCount>0?`<div class="stats-locked-note">Denne ${cfg.unit==='week'?'veka':'månaden'} er skjult til fredag kl. 18</div>`:''}
+    <div class="stats-legend">
+      ${members.map(m=>`<div class="stats-legend-item"><span class="stats-legend-dot" style="background:${memberColor(m.id)}"></span>${m.name}</div>`).join('')}
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Totalt i perioden</div>
+    <div class="stats-totals">
+      ${totals.map(t=>`
+        <div class="stats-total-row">
+          <span class="stats-total-dot" style="background:${memberColor(t.member.id)}"></span>
+          <span class="stats-total-name">${t.member.name}</span>
+          <span class="stats-total-num">${t.total} p</span>
+        </div>`).join('')}
+    </div>
+  </div>`;
+}
+
+function buildLineChartSVG(buckets, series, maxVal){
+  const W = Math.max(320, buckets.length*56);
+  const H = 220;
+  const padL = 36, padR = 14, padT = 14, padB = 28;
+  const plotW = W - padL - padR;
+  const plotH = H - padT - padB;
+  const n = buckets.length;
+  const xStep = n>1 ? plotW/(n-1) : 0;
+
+  const xFor = i => padL + i*xStep;
+  const yFor = v => padT + plotH - (v/maxVal)*plotH;
+
+  // Grid lines (horizontal, 4 lines)
+  let gridHtml = '';
+  for (let g=0; g<=4; g++){
+    const gy = padT + plotH - (g/4)*plotH;
+    const val = Math.round((g/4)*maxVal);
+    gridHtml += `<line x1="${padL}" y1="${gy}" x2="${W-padR}" y2="${gy}" stroke="var(--border)" stroke-width="1"/>`;
+    gridHtml += `<text x="${padL-6}" y="${gy+3}" font-size="9" fill="var(--muted)" text-anchor="end" font-family="Nunito">${val}</text>`;
+  }
+
+  // X labels
+  let labelHtml = '';
+  buckets.forEach((b,i)=>{
+    labelHtml += `<text x="${xFor(i)}" y="${H-8}" font-size="10" fill="var(--muted)" text-anchor="middle" font-family="Nunito" font-weight="700">${b.label}</text>`;
+  });
+
+  // Lines per member — skip null (locked) points by breaking the path
+  let linesHtml = '';
+  series.forEach(s => {
+    const color = memberColor(s.member.id);
+    let pathSegs = [];
+    let current = [];
+    s.values.forEach((v,i) => {
+      if (v===null) {
+        if (current.length) { pathSegs.push(current); current=[]; }
+      } else {
+        current.push([xFor(i), yFor(v)]);
+      }
+    });
+    if (current.length) pathSegs.push(current);
+
+    pathSegs.forEach(seg => {
+      const d = seg.map((pt,idx)=> (idx===0?'M':'L') + pt[0].toFixed(1) + ',' + pt[1].toFixed(1)).join(' ');
+      linesHtml += `<path d="${d}" fill="none" stroke="${color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>`;
+      seg.forEach(pt => {
+        linesHtml += `<circle cx="${pt[0].toFixed(1)}" cy="${pt[1].toFixed(1)}" r="3.5" fill="${color}"/>`;
+      });
+    });
+  });
+
+  return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg" style="display:block">
+    ${gridHtml}
+    ${linesHtml}
+    ${labelHtml}
+  </svg>`;
+}
+
 function updateCountdown(){
   const el=document.getElementById('countdown');if(!el)return;
   const now=new Date();const d=now.getDay();
@@ -606,16 +810,56 @@ async function showFridayReveal(){
 function closeFridayShow(){document.getElementById('fridayShow').classList.remove('visible');}
 
 /* ── CHORES ── */
+let selectedLogDate = dateStr(); // the date chores are being logged for
+
+function shiftLogDate(deltaDays){
+  const d = new Date(selectedLogDate);
+  d.setDate(d.getDate()+deltaDays);
+  const todayD = new Date(dateStr());
+  if (d > todayD) return;
+  selectedLogDate = dateStr(d);
+  renderTab('chores');
+}
+function logDateLabel(){
+  const d = new Date(selectedLogDate);
+  const today = dateStr();
+  const yesterday = dateStr(new Date(Date.now()-86400000));
+  if (selectedLogDate===today) return 'I dag';
+  if (selectedLogDate===yesterday) return 'I går';
+  return d.toLocaleDateString('no',{weekday:'short',day:'numeric',month:'short'});
+}
+function openDatePicker(){
+  document.getElementById('modal').innerHTML=`
+  <div class="backdrop" onclick="if(event.target===this)closeModal()">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-title">Vel dag å logge for</div>
+      <div class="field"><input type="date" id="logDateInput" value="${selectedLogDate}" max="${dateStr()}"></div>
+      <button class="btn-save" onclick="applyDatePicker()">Bruk denne datoen</button>
+      <button class="btn-cancel-s" onclick="closeModal()">Avbryt</button>
+    </div>
+  </div>`;
+}
+function applyDatePicker(){
+  const v=document.getElementById('logDateInput')?.value;
+  if(!v) return;
+  if (v > dateStr()) { toast('Kan ikkje logge for framtidige datoar'); return; }
+  selectedLogDate = v;
+  closeModal();
+  renderTab('chores');
+}
+
 async function renderChores(){
-  // Regular chores — logged today?
-  const todayLogs=await sb(`chore_logs?user_id=eq.${currentUser.id}&created_at=gte.${dateStr()}T00:00:00&select=chore_id`);
-  const todayIds=new Set(todayLogs.map(l=>l.chore_id));
+  const isToday = selectedLogDate === dateStr();
 
-  // Recurring tasks due this week — logged this week?
+  const dayLogs=await sb(`chore_logs?user_id=eq.${currentUser.id}&created_at=gte.${selectedLogDate}T00:00:00&created_at=lt.${selectedLogDate}T23:59:59&select=chore_id`);
+  const dayIds=new Set(dayLogs.map(l=>l.chore_id));
+
   const allRec=await sb('recurring_tasks?active=eq.true&select=*&order=created_at');
-  const dueThisWeek=allRec.filter(t=>isThisWeek(t));
+  const selectedDateObj = new Date(selectedLogDate+'T12:00:00');
+  const dueThisWeek=allRec.filter(t=>isThisWeek(t,selectedDateObj));
 
-  const wk=weekKey();
+  const wk=weekKey(selectedDateObj);
   const weekLogs=await sb(`chore_logs?user_id=eq.${currentUser.id}&select=chore_id,created_at`);
   const loggedThisWeekIds=new Set(
     weekLogs.filter(l=>weekKey(new Date(l.created_at))===wk).map(l=>l.chore_id)
@@ -623,8 +867,15 @@ async function renderChores(){
 
   const bonus=currentUser.mult>1?`<p style="font-size:13px;color:var(--pink-deep);font-weight:700;margin-bottom:12px;padding:9px 12px;background:var(--pink-light);border-radius:9px;">${currentUser.name} får ${currentUser.mult}× poeng for alt!</p>`:'';
 
+  const dateBar = `
+    <div class="date-bar">
+      <button class="date-arrow" onclick="shiftLogDate(-1)">‹</button>
+      <button class="date-bar-btn ${isToday?'today':''}" onclick="openDatePicker()">${logDateLabel()}</button>
+      <button class="date-arrow" onclick="shiftLogDate(1)" ${isToday?'disabled':''}>›</button>
+    </div>`;
+
   const regularHtml=chores.map(c=>{
-    const done=c.type==='daily'&&todayIds.has(c.id);
+    const done=c.type==='daily'&&dayIds.has(c.id);
     const effPts=c.pts*currentUser.mult;
     return `<div class="chore-item">
       <div class="chore-info">
@@ -665,6 +916,7 @@ async function renderChores(){
 
   return `<div class="card">
     <div class="card-title">Logg gjeremål</div>
+    ${dateBar}
     ${bonus}
     ${regularHtml}
     ${recurringHtml}
@@ -675,23 +927,27 @@ function previewPts(id,base,mult){
   const min=Number(document.getElementById('min_'+id)?.value||0);
   const el=document.getElementById('prev_'+id);if(el)el.textContent=(Math.round(min/5)*base*mult)+' p';
 }
+function logTimestampForSelectedDate(){
+  return selectedLogDate + 'T12:00:00';
+}
 async function logChore(choreId,label,basePts){
   const earned=basePts*currentUser.mult;
-  await sb('chore_logs',{method:'POST',headers:HR,body:JSON.stringify({user_id:currentUser.id,chore_id:choreId,label,pts:earned})});
-  toast(`+${earned} poeng!`);renderTab('chores');
+  await sb('chore_logs',{method:'POST',headers:HR,body:JSON.stringify({user_id:currentUser.id,chore_id:choreId,label,pts:earned,created_at:logTimestampForSelectedDate()})});
+  toast(`+${earned} poeng${selectedLogDate!==dateStr()?' ('+logDateLabel()+')':''}!`);renderTab('chores');
 }
 async function logPer5(choreId,label,basePts){
   const min=Number(document.getElementById('min_'+choreId)?.value||0);
   if(!min||min<5){toast('Skriv inn minuttar (min. 5)');return;}
   const earned=Math.round(min/5)*basePts*currentUser.mult;
-  await sb('chore_logs',{method:'POST',headers:HR,body:JSON.stringify({user_id:currentUser.id,chore_id:choreId,label,pts:earned,minutes:min})});
+  await sb('chore_logs',{method:'POST',headers:HR,body:JSON.stringify({user_id:currentUser.id,chore_id:choreId,label,pts:earned,minutes:min,created_at:logTimestampForSelectedDate()})});
   toast(`+${earned} poeng for ${min} min!`);renderTab('chores');
 }
 async function logRecurring(taskId,label,basePts){
   const earned=basePts*currentUser.mult;
-  await sb('chore_logs',{method:'POST',headers:HR,body:JSON.stringify({user_id:currentUser.id,chore_id:taskId,label,pts:earned})});
+  await sb('chore_logs',{method:'POST',headers:HR,body:JSON.stringify({user_id:currentUser.id,chore_id:taskId,label,pts:earned,created_at:logTimestampForSelectedDate()})});
   toast(`+${earned} poeng!`);renderTab('chores');
 }
+
 
 /* ── TASKS ── */
 async function renderTasks(){
@@ -981,6 +1237,104 @@ async function saveShop(){
   const items=raw.split('\n').map(s=>s.trim()).filter(Boolean).map((n,i)=>({list_id:listId,name:n,qty:'',done:false,sort_order:i}));
   if(items.length)await sb('shopping_items',{method:'POST',headers:HR,body:JSON.stringify(items)});
   closeModal();toast('Handleliste oppretta');renderTab('shopping');
+}
+
+/* ── CHAT ── */
+let chatPollTimer = null;
+let lastChatRenderCount = 0;
+
+async function renderChat(){
+  const msgs = await sb('messages?select=*&order=created_at.asc&limit=200');
+  lastChatRenderCount = msgs.length;
+  return `
+  <div class="chat-wrap" style="height:calc(100dvh - 230px)">
+    <div class="chat-messages" id="chatMessages">
+      ${renderChatMessages(msgs)}
+    </div>
+    <div class="chat-input-row">
+      <input class="chat-input" id="chatInput" placeholder="Skriv ei melding…" onkeydown="if(event.key==='Enter')sendChatMessage()">
+      <button class="chat-send" onclick="sendChatMessage()">➤</button>
+    </div>
+  </div>`;
+}
+
+function renderChatMessages(msgs){
+  if (!msgs.length) return `<div class="chat-empty">Ingen meldingar enno.<br>Send den første!</div>`;
+  let html = '';
+  let lastDay = '';
+  msgs.forEach(m => {
+    const d = new Date(m.created_at);
+    const dayKey = d.toLocaleDateString('no', {weekday:'long', day:'numeric', month:'long'});
+    if (dayKey !== lastDay) {
+      html += `<div class="chat-day-divider">${dayKey}</div>`;
+      lastDay = dayKey;
+    }
+    const sender = members.find(mem => mem.id === m.user_id);
+    const mine = m.user_id === currentUser.id;
+    const time = d.toLocaleTimeString('no', {hour:'2-digit', minute:'2-digit'});
+    html += `
+      <div class="chat-bubble-row ${mine?'mine':'theirs'}">
+        ${!mine ? `<div class="chat-sender">${sender?sender.name:'?'}</div>` : ''}
+        <div class="chat-bubble">${escapeHtml(m.text)}</div>
+        <div class="chat-time">${time}</div>
+      </div>`;
+  });
+  return html;
+}
+
+function escapeHtml(str){
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function scrollChatToBottom(){
+  setTimeout(() => {
+    const el = document.getElementById('chatMessages');
+    if (el) el.scrollTop = el.scrollHeight;
+  }, 60);
+}
+
+async function sendChatMessage(){
+  const inp = document.getElementById('chatInput');
+  const text = inp?.value.trim();
+  if (!text) return;
+  inp.value = '';
+  try {
+    await sb('messages', {method:'POST', headers:HR, body:JSON.stringify({user_id:currentUser.id, text})});
+  } catch(e) {
+    toast('Kunne ikkje sende melding');
+    return;
+  }
+  if (currentTab === 'chat') {
+    const msgs = await sb('messages?select=*&order=created_at.asc&limit=200');
+    lastChatRenderCount = msgs.length;
+    const el = document.getElementById('chatMessages');
+    if (el) { el.innerHTML = renderChatMessages(msgs); scrollChatToBottom(); }
+  }
+}
+
+/* Poll for new chat messages every 3s while chat tab is open */
+function setupChatRealtime(){
+  teardownChatRealtime();
+  chatPollTimer = setInterval(async () => {
+    if (currentTab !== 'chat') return;
+    try {
+      const msgs = await sb('messages?select=*&order=created_at.asc&limit=200');
+      if (msgs.length !== lastChatRenderCount) {
+        lastChatRenderCount = msgs.length;
+        const el = document.getElementById('chatMessages');
+        if (el) {
+          const wasAtBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 60;
+          el.innerHTML = renderChatMessages(msgs);
+          if (wasAtBottom) scrollChatToBottom();
+        }
+      }
+    } catch(e) { /* silent fail on poll */ }
+  }, 3000);
+}
+function teardownChatRealtime(){
+  if (chatPollTimer) { clearInterval(chatPollTimer); chatPollTimer = null; }
 }
 
 function closeModal(){document.getElementById('modal').innerHTML='';}
