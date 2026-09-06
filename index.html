@@ -54,8 +54,9 @@ body { font-family:var(--font-b); color:var(--text); overflow:hidden; }
 .header-center { flex:1; text-align:center; font-size:12px; color:rgba(255,255,255,0.8); font-weight:700; }
 .user-chip { background:rgba(255,255,255,0.22); border:1px solid rgba(255,255,255,0.35); color:#fff; font-size:13px; font-weight:800; padding:5px 13px; border-radius:20px; cursor:pointer; font-family:var(--font-b); }
 
-.nav { display:flex; background:var(--card); border-top:1px solid var(--border); flex-shrink:0; z-index:10; box-shadow:0 -1px 6px rgba(0,0,0,0.05); min-height:64px; }
-.nav-btn { flex:1; padding:14px 3px 12px; border:none; background:none; font-family:var(--font-b); font-size:10px; font-weight:800; color:var(--muted); cursor:pointer; text-transform:uppercase; letter-spacing:0.3px; position:relative; transition:color 0.15s; line-height:1.3; }
+.nav { display:flex; background:var(--card); border-top:1px solid var(--border); flex-shrink:0; z-index:10; box-shadow:0 -1px 6px rgba(0,0,0,0.05); min-height:64px; overflow-x:auto; scrollbar-width:none; }
+.nav::-webkit-scrollbar { display:none; }
+.nav-btn { flex:1 0 auto; min-width:62px; padding:14px 8px 12px; border:none; background:none; font-family:var(--font-b); font-size:10px; font-weight:800; color:var(--muted); cursor:pointer; text-transform:uppercase; letter-spacing:0.3px; position:relative; transition:color 0.15s; line-height:1.3; white-space:nowrap; }
 .nav-btn.active { color:var(--pink-deep); }
 .nav-btn.active::after { content:''; position:absolute; top:0; left:20%; right:20%; height:2px; background:var(--pink-deep); border-radius:0 0 3px 3px; }
 
@@ -228,6 +229,35 @@ body { font-family:var(--font-b); color:var(--text); overflow:hidden; }
 .date-arrow:active { background:var(--pink-light); }
 .date-arrow:disabled { opacity:0.3; cursor:default; }
 
+/* ── Version badge ── */
+.version-badge { position:fixed; bottom:70px; right:8px; font-size:9px; font-weight:700; color:var(--muted); opacity:0.5; z-index:60; pointer-events:none; font-family:var(--font-b); letter-spacing:0.3px; }
+
+/* ── Dinner / today card ── */
+.today-card { background:linear-gradient(135deg,#FDF0F4 0%,#FAE8EE 100%); border:1.5px solid var(--pink); }
+.today-label { font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:0.7px; color:var(--pink-deep); margin-bottom:8px; }
+.today-meal { font-family:var(--font-h); font-size:22px; font-weight:800; color:var(--charcoal); line-height:1.2; }
+.today-meal.empty { color:var(--muted); font-size:17px; font-weight:600; font-family:var(--font-b); }
+.today-cook { font-size:14px; font-weight:700; color:var(--pink-deep); margin-top:6px; }
+.today-notes { font-size:13px; color:var(--muted); font-weight:600; margin-top:8px; line-height:1.5; }
+.today-action { margin-top:12px; background:var(--pink-deep); color:#fff; border:none; border-radius:11px; font-family:var(--font-b); font-size:13px; font-weight:800; padding:10px 18px; cursor:pointer; }
+.today-action:active { transform:scale(0.97); }
+
+.dinner-week-nav { display:flex; align-items:center; gap:8px; margin-bottom:14px; }
+.dinner-week-label { flex:1; text-align:center; font-family:var(--font-h); font-size:15px; font-weight:700; color:var(--charcoal); }
+.dinner-day { display:flex; gap:12px; align-items:flex-start; padding:13px 0; border-bottom:1px solid var(--border); cursor:pointer; }
+.dinner-day:last-child { border-bottom:none; }
+.dinner-day.is-today { background:var(--soft); margin:0 -16px; padding-left:16px; padding-right:16px; border-radius:10px; }
+.dinner-date-col { width:44px; flex-shrink:0; text-align:center; }
+.dinner-dow { font-size:10px; font-weight:800; text-transform:uppercase; color:var(--muted); letter-spacing:0.4px; }
+.dinner-dom { font-family:var(--font-h); font-size:19px; font-weight:800; color:var(--charcoal); line-height:1.1; }
+.dinner-day.is-today .dinner-dom { color:var(--pink-deep); }
+.dinner-body { flex:1; min-width:0; }
+.dinner-meal { font-size:14px; font-weight:700; color:var(--charcoal); line-height:1.35; }
+.dinner-meal.empty { color:var(--muted); font-weight:600; font-style:italic; }
+.dinner-cook-pill { display:inline-flex; align-items:center; gap:5px; margin-top:5px; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:800; }
+.dinner-cook-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+.dinner-edit-hint { font-size:11px; color:var(--muted); font-weight:700; flex-shrink:0; align-self:center; }
+
 /* ── Stats / graph ── */
 .stats-period-row { display:flex; gap:6px; margin-bottom:16px; flex-wrap:wrap; }
 .stats-period-btn { flex:1; min-width:60px; padding:10px 8px; background:var(--soft); border:1.5px solid var(--border); border-radius:11px; font-family:var(--font-b); font-size:12px; font-weight:800; color:var(--muted); cursor:pointer; text-align:center; transition:all 0.15s; }
@@ -287,6 +317,7 @@ body { font-family:var(--font-b); color:var(--text); overflow:hidden; }
   <nav class="nav" id="mainNav" style="display:none">
     <button class="nav-btn active" onclick="switchTab('home',this)">Poeng</button>
     <button class="nav-btn" onclick="switchTab('chores',this)">Gjeremål</button>
+    <button class="nav-btn" onclick="switchTab('dinner',this)">Middag</button>
     <button class="nav-btn" onclick="switchTab('stats',this)">Statistikk</button>
     <button class="nav-btn" onclick="switchTab('tasks',this)">Oppgåver</button>
     <button class="nav-btn" onclick="switchTab('shopping',this)">Handle</button>
@@ -297,6 +328,7 @@ body { font-family:var(--font-b); color:var(--text); overflow:hidden; }
   <button class="fab" id="fab">＋</button>
   <div id="modal"></div>
   <div id="toastEl"></div>
+  <div class="version-badge">v1.0</div>
 </div>
 
 <script>
@@ -306,18 +338,15 @@ const H = {'Content-Type':'application/json','apikey':SUPA_KEY,'Authorization':'
 const HR = {...H,'Prefer':'return=representation'};
 
 async function sb(path, opts={}) {
-  const controller = new AbortController();
-  const tid = setTimeout(() => controller.abort(), 8000);
-  try {
-    const r = await fetch(SUPA_URL+'/rest/v1/'+path, {headers:H, signal:controller.signal, ...opts});
-    clearTimeout(tid);
+  const timeout = new Promise((_, reject) =>
+    setTimeout(() => reject(new Error("Tidsavbrot — fekk ikkje svar frå Supabase etter 15 sek")), 15000)
+  );
+  const request = (async () => {
+    const r = await fetch(SUPA_URL+'/rest/v1/'+path, {headers:H, ...opts});
     if (!r.ok) { const e=await r.text(); throw new Error("HTTP "+r.status+": "+e); }
     const t = await r.text(); return t ? JSON.parse(t) : [];
-  } catch(e) {
-    clearTimeout(tid);
-    if (e.name === "AbortError") throw new Error("Tidsavbrot — fekk ikkje svar frå Supabase etter 8 sek");
-    throw e;
-  }
+  })();
+  return Promise.race([request, timeout]);
 }
 
 let currentUser=null, members=[], chores=[];
@@ -556,6 +585,7 @@ async function renderTab(tab){
   el.innerHTML='<div style="padding:32px;text-align:center"><div class="spinner" style="margin:0 auto"></div></div>';
   if(tab==='home')     el.innerHTML=await renderHome();
   if(tab==='chores')   el.innerHTML=await renderChores();
+  if(tab==='dinner')   el.innerHTML=await renderDinner();
   if(tab==='stats')    el.innerHTML=await renderStats();
   if(tab==='tasks')    el.innerHTML=await renderTasks();
   if(tab==='shopping') el.innerHTML=await renderShopping();
@@ -579,6 +609,23 @@ async function renderHome(){
   const myToday=allLogs.filter(l=>l.created_at.slice(0,10)===dateStr()).length;
   const recent=await sb(`chore_logs?user_id=eq.${currentUser.id}&select=label,pts,created_at&order=created_at.desc&limit=5`);
 
+  // Today's dinner
+  let dinnerCard = '';
+  try {
+    const dRows = await sb(`dinners?date=eq.${dateStr()}&select=*`);
+    const dRec = dRows[0] || null;
+    const cook = dRec && dRec.cook_id ? members.find(m=>m.id===dRec.cook_id) : null;
+    const hasPlan = dRec && (dRec.meal || dRec.cook_id);
+    dinnerCard = `
+    <div class="card today-card">
+      <div class="today-label">Middag i dag</div>
+      <div class="today-meal ${hasPlan && dRec.meal ? '' : 'empty'}">${hasPlan && dRec.meal ? escapeHtml(dRec.meal) : 'Ingen middag planlagt'}</div>
+      ${cook ? `<div class="today-cook">${cook.name} lagar</div>` : ''}
+      ${dRec && dRec.notes ? `<div class="today-notes">${escapeHtml(dRec.notes)}</div>` : ''}
+      ${!hasPlan ? `<button class="today-action" onclick="openDinnerModal('${dateStr()}')">Planlegg middag</button>` : ''}
+    </div>`;
+  } catch(e) { dinnerCard = ''; }
+
   const locked=isFridayReveal()?'':`
     <div class="card">
       <div class="card-title">Poengtavle</div>
@@ -600,6 +647,7 @@ async function renderHome(){
 
   setTimeout(updateCountdown,100);
   return `
+  ${dinnerCard}
   <div class="card">
     <div class="card-title">${currentUser.name} — denne veka</div>
     <div class="my-score-big"><div class="my-score-num">${myWeek}</div><div class="my-score-label">poeng</div></div>
@@ -614,6 +662,173 @@ async function renderHome(){
     <div class="card-title"><span><span class="realtime-dot"></span>Siste aktivitet</span></div>
     ${logsHtml}
   </div>`;
+}
+
+/* ── MIDDAGSKALENDER ── */
+let dinnerWeekOffset = 0; // 0 = this week, 1 = next week, -1 = last week
+
+function mondayOf(d){
+  const t = new Date(d);
+  const dow = t.getDay() || 7;
+  t.setDate(t.getDate() - dow + 1);
+  t.setHours(0,0,0,0);
+  return t;
+}
+
+function shiftDinnerWeek(delta){
+  dinnerWeekOffset += delta;
+  renderTab('dinner');
+}
+
+async function renderDinner(){
+  const base = new Date();
+  base.setDate(base.getDate() + dinnerWeekOffset*7);
+  const monday = mondayOf(base);
+  const sunday = new Date(monday); sunday.setDate(monday.getDate()+6);
+
+  const fromStr = dateStr(monday);
+  const toStr = dateStr(sunday);
+  const rows = await sb(`dinners?date=gte.${fromStr}&date=lte.${toStr}&select=*`);
+  const byDate = {};
+  rows.forEach(r => { byDate[r.date] = r; });
+
+  const today = dateStr();
+  const DOW = ['Man','Tys','Ons','Tor','Fre','Lau','Sun'];
+
+  let daysHtml = '';
+  for (let i=0; i<7; i++){
+    const d = new Date(monday); d.setDate(monday.getDate()+i);
+    const ds = dateStr(d);
+    const rec = byDate[ds];
+    const cook = rec && rec.cook_id ? members.find(m=>m.id===rec.cook_id) : null;
+    const isToday = ds === today;
+    daysHtml += `
+      <div class="dinner-day ${isToday?'is-today':''}" onclick="openDinnerModal('${ds}')">
+        <div class="dinner-date-col">
+          <div class="dinner-dow">${DOW[i]}</div>
+          <div class="dinner-dom">${d.getDate()}</div>
+        </div>
+        <div class="dinner-body">
+          <div class="dinner-meal ${rec && rec.meal ? '' : 'empty'}">${rec && rec.meal ? escapeHtml(rec.meal) : 'Ikkje planlagt'}</div>
+          ${cook ? `<span class="dinner-cook-pill" style="background:${memberColor(cook.id)}22;color:${memberColor(cook.id)}"><span class="dinner-cook-dot" style="background:${memberColor(cook.id)}"></span>${cook.name}</span>` : ''}
+        </div>
+        <span class="dinner-edit-hint">›</span>
+      </div>`;
+  }
+
+  const weekLabel = dinnerWeekOffset===0 ? `Denne veka (v${weekNum(monday)})`
+    : dinnerWeekOffset===1 ? `Neste veke (v${weekNum(monday)})`
+    : dinnerWeekOffset===-1 ? `Førre veke (v${weekNum(monday)})`
+    : `Veke ${weekNum(monday)}`;
+
+  return `<div class="card">
+    <div class="dinner-week-nav">
+      <button class="date-arrow" onclick="shiftDinnerWeek(-1)">‹</button>
+      <span class="dinner-week-label">${weekLabel}</span>
+      <button class="date-arrow" onclick="shiftDinnerWeek(1)">›</button>
+    </div>
+    ${daysHtml}
+  </div>
+  <div class="card">
+    <div style="font-size:13px;color:var(--muted);font-weight:600;line-height:1.5">
+      Trykk på ein dag for å melde deg som kokk eller skrive kva de skal ete.
+      ${currentUser.is_admin ? 'Som administrator kan du endre alle dagar.' : 'Du kan endre dine eigne dagar og ledige dagar.'}
+    </div>
+  </div>`;
+}
+
+async function openDinnerModal(ds){
+  let rec = null;
+  try {
+    const rows = await sb(`dinners?date=eq.${ds}&select=*`);
+    rec = rows[0] || null;
+  } catch(e) { /* new entry */ }
+
+  const cookId = rec ? rec.cook_id : '';
+  const canEdit = currentUser.is_admin || !rec || !rec.cook_id || rec.cook_id === currentUser.id;
+
+  const d = new Date(ds+'T12:00:00');
+  const dateLabel = d.toLocaleDateString('no',{weekday:'long', day:'numeric', month:'long'});
+
+  if (!canEdit) {
+    const cook = members.find(m=>m.id===rec.cook_id);
+    document.getElementById('modal').innerHTML = `
+    <div class="backdrop" onclick="if(event.target===this)closeModal()">
+      <div class="sheet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-title">${dateLabel}</div>
+        <div style="font-size:15px;font-weight:700;color:var(--charcoal);margin-bottom:6px">${rec.meal ? escapeHtml(rec.meal) : 'Ikkje planlagt'}</div>
+        <div style="font-size:13px;color:var(--muted);font-weight:600;margin-bottom:16px">Kokk: ${cook ? cook.name : '—'}</div>
+        <div style="font-size:13px;color:var(--muted);font-weight:600;line-height:1.5">${cook ? cook.name : 'Nokon andre'} har meldt seg. Snakk med dei, eller be Geir/Mari endre.</div>
+        <button class="btn-cancel-s" onclick="closeModal()">Lukk</button>
+      </div>
+    </div>`;
+    return;
+  }
+
+  document.getElementById('modal').innerHTML = `
+  <div class="backdrop" onclick="if(event.target===this)closeModal()">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-title">${dateLabel}</div>
+      <div class="field">
+        <label>Kven lagar middag</label>
+        <select id="dCook">
+          <option value="">— Ingen enno —</option>
+          ${members.map(m=>`<option value="${m.id}" ${cookId===m.id?'selected':''}>${m.name}</option>`).join('')}
+        </select>
+      </div>
+      <div class="field">
+        <label>Kva skal vi ete</label>
+        <input id="dMeal" placeholder="t.d. Fiskegrateng" value="${rec && rec.meal ? escapeAttr(rec.meal) : ''}">
+      </div>
+      <div class="field">
+        <label>Notat (valfritt)</label>
+        <textarea id="dNotes" placeholder="t.d. Tida er ikkje heime til middag">${rec && rec.notes ? escapeHtml(rec.notes) : ''}</textarea>
+      </div>
+      <button class="btn-save" onclick="saveDinner('${ds}')">Lagre</button>
+      ${rec ? `<button class="btn-cancel-s" onclick="clearDinner('${ds}')" style="color:var(--pink-deep);border-color:var(--pink)">Tøm denne dagen</button>` : ''}
+      <button class="btn-cancel-s" onclick="closeModal()">Avbryt</button>
+    </div>
+  </div>`;
+}
+
+function escapeAttr(str){
+  return String(str).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+async function saveDinner(ds){
+  const cook_id = document.getElementById('dCook')?.value || null;
+  const meal = document.getElementById('dMeal')?.value.trim() || null;
+  const notes = document.getElementById('dNotes')?.value.trim() || null;
+
+  const body = { date: ds, cook_id: cook_id || null, meal, notes, created_by: currentUser.id };
+
+  try {
+    // Upsert on the unique date column
+    await sb('dinners?on_conflict=date', {
+      method:'POST',
+      headers:{...HR, 'Prefer':'return=representation,resolution=merge-duplicates'},
+      body: JSON.stringify(body)
+    });
+    closeModal();
+    toast('Middag lagra');
+    renderTab('dinner');
+  } catch(e) {
+    toast('Kunne ikkje lagre');
+  }
+}
+
+async function clearDinner(ds){
+  if (!confirm('Tømme denne dagen?')) return;
+  try {
+    await sb(`dinners?date=eq.${ds}`, {method:'DELETE', headers:H});
+    closeModal();
+    toast('Dagen er tømt');
+    renderTab('dinner');
+  } catch(e) {
+    toast('Kunne ikkje slette');
+  }
 }
 
 /* ── STATS / GRAF ── */
