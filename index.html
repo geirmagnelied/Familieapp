@@ -303,6 +303,8 @@ body { font-family:var(--font-b); color:var(--text); overflow:hidden; }
       <div class="pin-error" id="pinError"></div>
       <div class="pin-grid" id="pinGrid"></div>
       <button class="btn-back" onclick="backToNames()">Tilbake</button>
+      <button class="btn-back" onclick="toggleForgotPin()">Gløymt PIN?</button>
+      <div class="pin-error" id="forgotPinHelp" style="display:none;color:var(--muted);font-weight:600">Be Geir eller Mari nullstille PIN-koden din under Admin → Familiemedlemmer.</div>
     </div>
   </div>
 
@@ -343,7 +345,7 @@ body { font-family:var(--font-b); color:var(--text); overflow:hidden; }
   <button class="fab" id="fab">＋</button>
   <div id="modal"></div>
   <div id="toastEl"></div>
-  <div class="version-badge">v1.1</div>
+  <div class="version-badge">v1.2</div>
 </div>
 
 <script>
@@ -573,6 +575,10 @@ function checkPin(){
   }
 }
 function backToNames(){renderNameList();}
+function toggleForgotPin(){
+  const el=document.getElementById('forgotPinHelp');
+  el.style.display=el.style.display==='none'?'block':'none';
+}
 function logout(){if(!confirm('Bytte brukar?'))return;localStorage.removeItem('familieapp_user');location.reload();}
 
 /* ── LAUNCH ── */
@@ -1300,12 +1306,35 @@ async function renderAdmin(){
   </div>
   <div class="card">
     <div class="card-title">Familiemedlemmer</div>
+    <div class="admin-note">Gløymt PIN? Ein administrator kan nullstille han her.</div>
     ${members.map(m=>`
       <div class="admin-row">
-        <div class="admin-name">${m.name}</div>
-        <div class="admin-meta">${m.mult}× · ${m.is_admin?'Admin':'Brukar'}</div>
+        <div><div class="admin-name">${m.name}</div><div class="admin-meta" style="text-align:left">${m.mult}× · ${m.is_admin?'Admin':'Brukar'}</div></div>
+        <button class="btn-del" onclick="showPinResetModal('${m.id}','${m.name}')">Endre PIN</button>
       </div>`).join('')}
   </div>`;
+}
+
+function showPinResetModal(id,name){
+  document.getElementById('modal').innerHTML=`
+  <div class="backdrop" onclick="if(event.target===this)closeModal()">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-title">Ny PIN for ${name}</div>
+      <div class="field"><label>4-sifra PIN</label><input id="newPin" type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="0000"></div>
+      <p class="hint">${name} må bruke denne nye koden neste gong dei loggar inn.</p>
+      <button class="btn-save" onclick="savePinReset('${id}','${name}')">Lagre ny PIN</button>
+      <button class="btn-cancel-s" onclick="closeModal()">Avbryt</button>
+    </div>
+  </div>`;
+  setTimeout(()=>document.getElementById('newPin')?.focus(),50);
+}
+async function savePinReset(id,name){
+  const pin=document.getElementById('newPin')?.value.trim();
+  if(!/^\d{4}$/.test(pin)){toast('PIN må vere nøyaktig 4 tal');return;}
+  await sb(`family_members?id=eq.${id}`,{method:'PATCH',headers:HR,body:JSON.stringify({pin})});
+  members=await sb('family_members?select=*&order=id');
+  closeModal();toast(`Ny PIN lagra for ${name}`);renderTab('admin');
 }
 
 function showAdminAddModal(){
