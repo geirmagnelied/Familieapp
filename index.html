@@ -53,6 +53,8 @@ body { font-family:var(--font-b); color:var(--text); overflow:hidden; }
 .app-title { font-family:var(--font-h); font-size:19px; font-weight:800; color:#fff; }
 .header-center { flex:1; text-align:center; font-size:12px; color:rgba(255,255,255,0.8); font-weight:700; }
 .user-chip { background:rgba(255,255,255,0.22); border:1px solid rgba(255,255,255,0.35); color:#fff; font-size:13px; font-weight:800; padding:5px 13px; border-radius:20px; cursor:pointer; font-family:var(--font-b); }
+.header-right { display:flex; align-items:center; gap:8px; }
+.hamburger-btn { background:rgba(255,255,255,0.22); border:1px solid rgba(255,255,255,0.35); color:#fff; width:30px; height:30px; border-radius:50%; cursor:pointer; font-size:14px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
 
 .nav { display:flex; background:var(--card); border-top:1px solid var(--border); flex-shrink:0; z-index:10; box-shadow:0 -1px 6px rgba(0,0,0,0.05); min-height:64px; overflow-x:auto; scrollbar-width:none; }
 .nav::-webkit-scrollbar { display:none; }
@@ -66,24 +68,16 @@ body { font-family:var(--font-b); color:var(--text); overflow:hidden; }
 .card-title { font-family:var(--font-h); font-size:16px; font-weight:700; color:var(--charcoal); margin-bottom:13px; display:flex; align-items:center; justify-content:space-between; }
 .card-action { font-family:var(--font-b); font-size:13px; font-weight:700; color:var(--pink); cursor:pointer; }
 
-.my-score-big { text-align:center; padding:6px 0 14px; }
-.my-score-num { font-family:var(--font-h); font-size:68px; font-weight:800; color:var(--pink-deep); line-height:1; }
-.my-score-label { font-size:13px; color:var(--muted); font-weight:700; margin-top:3px; text-transform:uppercase; letter-spacing:0.5px; }
-.stat-row { display:flex; justify-content:space-around; margin-top:16px; padding-top:14px; border-top:1px solid var(--border); }
-.stat-box { text-align:center; }
-.stat-num { font-family:var(--font-h); font-size:24px; font-weight:800; color:var(--charcoal); }
-.stat-lbl { font-size:11px; color:var(--muted); font-weight:700; text-transform:uppercase; letter-spacing:0.3px; margin-top:1px; }
+.mini-score-card { display:flex; align-items:center; padding:12px 10px; }
+.mini-score-item { flex:1; text-align:center; }
+.mini-score-num { font-family:var(--font-h); font-size:22px; font-weight:800; color:var(--pink-deep); line-height:1; }
+.mini-score-lbl { font-size:11px; color:var(--muted); font-weight:700; margin-top:2px; text-transform:uppercase; letter-spacing:0.3px; }
+.mini-score-divider { width:1px; align-self:stretch; background:var(--border); }
 
 .locked-box { text-align:center; padding:22px 14px; background:var(--soft); border-radius:12px; border:1px solid var(--border); }
 .locked-title { font-family:var(--font-h); font-size:17px; font-weight:700; color:var(--charcoal); margin-bottom:6px; }
 .locked-sub { font-size:13px; color:var(--muted); font-weight:600; line-height:1.5; }
 .countdown { font-family:var(--font-h); font-size:26px; font-weight:800; color:var(--pink); margin:10px 0; }
-
-.log-item { display:flex; align-items:center; justify-content:space-between; padding:9px 0; border-bottom:1px solid var(--border); }
-.log-item:last-child { border-bottom:none; }
-.log-label { font-weight:600; font-size:14px; color:var(--charcoal); }
-.log-time { font-size:11px; color:var(--muted); margin-top:1px; font-weight:600; }
-.log-pts { font-family:var(--font-h); font-size:16px; font-weight:800; color:var(--pink); }
 
 /* Chores */
 .chore-item { display:flex; align-items:center; gap:12px; padding:13px 0; border-bottom:1px solid var(--border); }
@@ -198,9 +192,6 @@ body { font-family:var(--font-b); color:var(--text); overflow:hidden; }
 @keyframes toastpop { 0%{opacity:0;transform:translateX(-50%) translateY(-12px) scale(0.92)} 12%{opacity:1;transform:translateX(-50%) translateY(0) scale(1)} 78%{opacity:1} 100%{opacity:0} }
 .empty { text-align:center; padding:40px 16px; color:var(--muted); }
 .empty p { font-size:14px; font-weight:600; line-height:1.6; }
-.realtime-dot { width:7px; height:7px; border-radius:50%; background:var(--mint); display:inline-block; margin-right:5px; animation:pulse 2s infinite; }
-@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
-
 /* ── Chat ── */
 .chat-wrap { display:flex; flex-direction:column; height:100%; }
 .chat-messages { flex:1; overflow-y:auto; padding:4px 2px 8px; display:flex; flex-direction:column; gap:8px; }
@@ -232,30 +223,18 @@ body { font-family:var(--font-b); color:var(--text); overflow:hidden; }
 /* ── Version badge ── */
 .version-badge { position:fixed; bottom:70px; right:8px; font-size:9px; font-weight:700; color:var(--muted); opacity:0.5; z-index:60; pointer-events:none; font-family:var(--font-b); letter-spacing:0.3px; }
 
-/* ── Dinner / today card ── */
-.today-card { background:linear-gradient(135deg,#FDF0F4 0%,#FAE8EE 100%); border:1.5px solid var(--pink); padding:12px 16px; }
-.today-row { display:flex; align-items:center; gap:10px; }
-.today-label { font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:0.6px; color:var(--pink-deep); margin-bottom:2px; }
-.today-meal { font-family:var(--font-h); font-size:16px; font-weight:800; color:var(--charcoal); line-height:1.25; }
-.today-meal.empty { color:var(--muted); font-size:14px; font-weight:600; font-family:var(--font-b); }
-.today-cook { font-size:12px; font-weight:700; color:var(--pink-deep); margin-top:2px; }
-.today-notes { font-size:12px; color:var(--muted); font-weight:600; margin-top:4px; line-height:1.4; }
-.today-action { flex-shrink:0; background:var(--pink-deep); color:#fff; border:none; border-radius:10px; font-family:var(--font-b); font-size:12px; font-weight:800; padding:8px 14px; cursor:pointer; }
+/* ── Dinner / dagskort på Dashboard ── */
+.today-card { background:linear-gradient(135deg,#FDF0F4 0%,#FAE8EE 100%); border:1.5px solid var(--pink); padding:14px 16px 16px; }
+.today-nav { display:flex; align-items:center; justify-content:center; gap:14px; margin-bottom:10px; }
+.today-daylabel { font-family:var(--font-h); font-size:17px; font-weight:800; color:var(--charcoal); min-width:120px; text-align:center; text-transform:capitalize; }
+.today-label { font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:0.6px; color:var(--pink-deep); margin-bottom:2px; text-align:center; }
+.today-meal { font-family:var(--font-h); font-size:20px; font-weight:800; color:var(--charcoal); line-height:1.3; text-align:center; }
+.today-meal.empty { color:var(--muted); font-size:15px; font-weight:600; font-family:var(--font-b); }
+.today-cook { font-size:13px; font-weight:700; color:var(--pink-deep); margin-top:4px; text-align:center; }
+.today-notes { font-size:12px; color:var(--muted); font-weight:600; margin-top:6px; line-height:1.4; text-align:center; }
+.today-action { background:var(--pink-deep); color:#fff; border:none; border-radius:10px; font-family:var(--font-b); font-size:13px; font-weight:800; padding:10px 14px; cursor:pointer; }
 .today-action:active { transform:scale(0.97); }
-
-/* ── Mini dagsveljar (middag) ── */
-.mini-cal-strip { display:flex; gap:8px; overflow-x:auto; scroll-snap-type:x mandatory; padding:2px 2px 4px; margin:0 -2px; scrollbar-width:none; }
-.mini-cal-strip::-webkit-scrollbar { display:none; }
-.mini-cal-day { flex:0 0 calc(33.333% - 6px); scroll-snap-align:start; background:var(--soft); border:1px solid var(--border); border-radius:12px; padding:8px 6px; text-align:center; cursor:pointer; transition:all 0.12s; }
-.mini-cal-day:active { transform:scale(0.96); }
-.mini-cal-day.is-today { border-color:var(--pink); background:var(--pink-light); }
-.mini-cal-dow { font-size:10px; font-weight:800; text-transform:uppercase; color:var(--muted); letter-spacing:0.3px; }
-.mini-cal-day.is-today .mini-cal-dow { color:var(--pink-deep); }
-.mini-cal-dom { font-family:var(--font-h); font-weight:800; font-size:16px; color:var(--charcoal); margin:2px 0 3px; }
-.mini-cal-day.is-today .mini-cal-dom { color:var(--pink-deep); }
-.mini-cal-meal { font-size:10px; font-weight:700; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.mini-cal-meal.has { color:var(--pink-deep); }
-.mini-cal-cook-dot { width:6px; height:6px; border-radius:50%; display:inline-block; margin-right:3px; vertical-align:middle; }
+.today-action-wide { display:block; width:100%; margin-top:14px; }
 
 .dinner-week-nav { display:flex; align-items:center; gap:8px; margin-bottom:14px; }
 .dinner-week-label { flex:1; text-align:center; font-family:var(--font-h); font-size:15px; font-weight:700; color:var(--charcoal); }
@@ -325,7 +304,10 @@ body { font-family:var(--font-b); color:var(--text); overflow:hidden; }
     <div class="header-inner">
       <span class="app-title">FamilieApp</span>
       <span class="header-center" id="headerCenter"></span>
-      <span class="user-chip" id="userChip" onclick="logout()"></span>
+      <div class="header-right">
+        <span class="user-chip" id="userChip" onclick="logout()"></span>
+        <button class="hamburger-btn" id="hamburgerBtn" onclick="openMenu()" style="display:none">☰</button>
+      </div>
     </div>
   </div>
 
@@ -336,16 +318,14 @@ body { font-family:var(--font-b); color:var(--text); overflow:hidden; }
     <button class="nav-btn" onclick="switchTab('chores',this)">Gjeremål</button>
     <button class="nav-btn" onclick="switchTab('dinner',this)">Middag</button>
     <button class="nav-btn" onclick="switchTab('stats',this)">Statistikk</button>
-    <button class="nav-btn" onclick="switchTab('tasks',this)">Oppgåver</button>
     <button class="nav-btn" onclick="switchTab('shopping',this)">Handle</button>
     <button class="nav-btn" onclick="switchTab('chat',this)">Chat</button>
-    <button class="nav-btn" id="adminNavBtn" onclick="switchTab('admin',this)" style="display:none">Admin</button>
   </nav>
 
   <button class="fab" id="fab">＋</button>
   <div id="modal"></div>
   <div id="toastEl"></div>
-  <div class="version-badge">v1.2</div>
+  <div class="version-badge">v1.3</div>
 </div>
 
 <script>
@@ -589,9 +569,20 @@ function launchApp(){
   document.getElementById('userChip').textContent=currentUser.name;
   const now=new Date();
   document.getElementById('headerCenter').textContent=`${DAYS[now.getDay()]}, veke ${weekNum()}`;
-  if(currentUser.is_admin)document.getElementById('adminNavBtn').style.display='';
+  if(currentUser.is_admin)document.getElementById('hamburgerBtn').style.display='';
   renderTab('home');
   if(isFridayReveal())setTimeout(()=>showFridayReveal(),600);
+}
+function openMenu(){
+  document.getElementById('modal').innerHTML=`
+  <div class="backdrop" onclick="if(event.target===this)closeModal()">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-title">Meny</div>
+      <button class="btn-save" onclick="closeModal();switchTab('admin')">Admin</button>
+      <button class="btn-cancel-s" onclick="closeModal()">Lukk</button>
+    </div>
+  </div>`;
 }
 
 /* ── TAB ROUTER ── */
@@ -608,70 +599,65 @@ async function renderTab(tab){
   if(tab==='chores')   el.innerHTML=await renderChores();
   if(tab==='dinner')   el.innerHTML=await renderDinner();
   if(tab==='stats')    el.innerHTML=await renderStats();
-  if(tab==='tasks')    el.innerHTML=await renderTasks();
   if(tab==='shopping') el.innerHTML=await renderShopping();
   if(tab==='admin')    el.innerHTML=await renderAdmin();
   if(tab==='chat')      { el.innerHTML=await renderChat(); setupChatRealtime(); scrollChatToBottom(); }
   else { teardownChatRealtime(); }
   const fab=document.getElementById('fab');
-  const showFab=tab==='tasks'||tab==='shopping'||tab==='admin';
+  const showFab=(tab==='chores'&&choresTasksFilter!=='chores')||tab==='shopping'||tab==='admin';
   fab.style.display=showFab?'flex':'none';
-  if(tab==='tasks')    fab.onclick=()=>showTaskModal();
+  if(tab==='chores'&&choresTasksFilter!=='chores') fab.onclick=()=>showTaskModal();
   if(tab==='shopping') fab.onclick=()=>showShopModal();
   if(tab==='admin')    fab.onclick=()=>showAdminAddModal();
 }
 
 /* ── HOME ── */
+let dashDayOffset = 0; // 0 = i dag, opp til 6 dagar fram, styrer dagsnavigasjonen på Dashboard
+
+function shiftDashDay(delta){
+  dashDayOffset = Math.max(0, Math.min(6, dashDayOffset+delta));
+  renderTab('home');
+}
+
 async function renderHome(){
-  const wk=weekKey();const mo=monthKey();
+  const wk=weekKey();
   const allLogs=await sb(`chore_logs?user_id=eq.${currentUser.id}&select=pts,created_at&order=created_at.desc`);
   const myWeek=allLogs.filter(l=>weekKey(new Date(l.created_at))===wk).reduce((a,l)=>a+l.pts,0);
-  const myMonth=allLogs.filter(l=>monthKey(new Date(l.created_at))===mo).reduce((a,l)=>a+l.pts,0);
-  const myToday=allLogs.filter(l=>l.created_at.slice(0,10)===dateStr()).length;
-  const recent=await sb(`chore_logs?user_id=eq.${currentUser.id}&select=label,pts,created_at&order=created_at.desc&limit=5`);
+  const myToday=allLogs.filter(l=>l.created_at.slice(0,10)===dateStr()).reduce((a,l)=>a+l.pts,0);
 
-  // Today's dinner (kompakt) + mini dagsveljar for komande dagar
+  // Dagsveljar for middag — større kalenderkort, éin dag om gongen
   let dinnerCard = '';
   try {
-    const dRows = await sb(`dinners?date=eq.${dateStr()}&select=*`);
+    const d = new Date(); d.setDate(d.getDate()+dashDayOffset);
+    const ds = dateStr(d);
+    const dRows = await sb(`dinners?date=eq.${ds}&select=*`);
     const dRec = dRows[0] || null;
     const cook = dRec && dRec.cook_id ? members.find(m=>m.id===dRec.cook_id) : null;
     const hasPlan = dRec && (dRec.meal || dRec.cook_id);
-
-    const miniStart = new Date();
-    const miniEnd = new Date(); miniEnd.setDate(miniEnd.getDate()+13);
-    const miniRows = await sb(`dinners?date=gte.${dateStr(miniStart)}&date=lte.${dateStr(miniEnd)}&select=*`);
-    const miniByDate = {}; miniRows.forEach(r=>{ miniByDate[r.date]=r; });
-    const todayStr = dateStr();
-    const DOW = ['Søn','Man','Tys','Ons','Tor','Fre','Lau'];
-    let miniDaysHtml = '';
-    for (let i=0; i<14; i++){
-      const d = new Date(); d.setDate(d.getDate()+i);
-      const ds = dateStr(d);
-      const rec = miniByDate[ds];
-      const mCook = rec && rec.cook_id ? members.find(m=>m.id===rec.cook_id) : null;
-      miniDaysHtml += `
-        <div class="mini-cal-day ${ds===todayStr?'is-today':''}" onclick="openDinnerModal('${ds}')">
-          <div class="mini-cal-dow">${ds===todayStr?'I dag':DOW[d.getDay()]}</div>
-          <div class="mini-cal-dom">${d.getDate()}.${d.getMonth()+1}</div>
-          <div class="mini-cal-meal ${rec && rec.meal ? 'has' : ''}">${mCook ? `<span class="mini-cal-cook-dot" style="background:${memberColor(mCook.id)}"></span>` : ''}${rec && rec.meal ? escapeHtml(rec.meal) : (mCook ? mCook.name : '—')}</div>
-        </div>`;
-    }
+    const DOW=['søndag','måndag','tysdag','onsdag','torsdag','fredag','laurdag'];
+    const dayLabel = dashDayOffset===0 ? 'I dag' : dashDayOffset===1 ? 'I morgon' : `${DOW[d.getDay()]} ${d.getDate()}.${d.getMonth()+1}`;
 
     dinnerCard = `
     <div class="card today-card">
-      <div class="today-row">
-        <div style="flex:1;min-width:0">
-          <div class="today-label">Middag i dag</div>
-          <div class="today-meal ${hasPlan && dRec.meal ? '' : 'empty'}">${hasPlan && dRec.meal ? escapeHtml(dRec.meal) : 'Ingen middag planlagt'}</div>
-          ${cook ? `<div class="today-cook">${cook.name} lagar</div>` : ''}
-          ${dRec && dRec.notes ? `<div class="today-notes">${escapeHtml(dRec.notes)}</div>` : ''}
-        </div>
-        ${!hasPlan ? `<button class="today-action" onclick="openDinnerModal('${dateStr()}')">Planlegg</button>` : ''}
+      <div class="today-nav">
+        <button class="date-arrow" onclick="shiftDashDay(-1)" ${dashDayOffset===0?'disabled':''}>‹</button>
+        <div class="today-daylabel">${dayLabel}</div>
+        <button class="date-arrow" onclick="shiftDashDay(1)" ${dashDayOffset>=6?'disabled':''}>›</button>
       </div>
-    </div>
-    <div class="mini-cal-strip">${miniDaysHtml}</div>`;
+      <div class="today-label">Middag</div>
+      <div class="today-meal ${hasPlan && dRec.meal ? '' : 'empty'}">${hasPlan && dRec.meal ? escapeHtml(dRec.meal) : 'Ingen middag planlagt'}</div>
+      ${cook ? `<div class="today-cook">${cook.name} lagar</div>` : ''}
+      ${dRec && dRec.notes ? `<div class="today-notes">${escapeHtml(dRec.notes)}</div>` : ''}
+      <button class="today-action today-action-wide" onclick="openDinnerModal('${ds}')">${hasPlan ? 'Endre plan' : 'Planlegg middag'}</button>
+    </div>`;
   } catch(e) { dinnerCard = ''; }
+
+  const scoreRow = `
+  <div class="card mini-score-card">
+    <div class="mini-score-item"><div class="mini-score-num">${myToday}</div><div class="mini-score-lbl">poeng i dag</div></div>
+    <div class="mini-score-divider"></div>
+    <div class="mini-score-item"><div class="mini-score-num">${myWeek}</div><div class="mini-score-lbl">poeng denne veka</div></div>
+  </div>`;
 
   const locked=isFridayReveal()?'':`
     <div class="card">
@@ -683,32 +669,11 @@ async function renderHome(){
       </div>
     </div>`;
 
-  const logsHtml=recent.length?recent.map(l=>{
-    const d=new Date(l.created_at);
-    return `<div class="log-item">
-      <div><div class="log-label">${l.label}</div>
-      <div class="log-time">${d.toLocaleDateString('no',{weekday:'short',day:'numeric',month:'short'})} ${d.toLocaleTimeString('no',{hour:'2-digit',minute:'2-digit'})}</div></div>
-      <div class="log-pts">+${l.pts}</div>
-    </div>`;
-  }).join(''):`<div style="color:var(--muted);font-size:13px;font-weight:600;padding:6px 0">Ingen registrerte gjeremål enno</div>`;
-
   setTimeout(updateCountdown,100);
   return `
   ${dinnerCard}
-  <div class="card">
-    <div class="card-title">${currentUser.name} — denne veka</div>
-    <div class="my-score-big"><div class="my-score-num">${myWeek}</div><div class="my-score-label">poeng</div></div>
-    <div class="stat-row">
-      <div class="stat-box"><div class="stat-num">${myToday}</div><div class="stat-lbl">I dag</div></div>
-      <div class="stat-box"><div class="stat-num">${myMonth}</div><div class="stat-lbl">Månaden</div></div>
-      ${currentUser.mult>1?`<div class="stat-box"><div class="stat-num">${currentUser.mult}×</div><div class="stat-lbl">Bonus</div></div>`:''}
-    </div>
-  </div>
-  ${locked}
-  <div class="card">
-    <div class="card-title"><span><span class="realtime-dot"></span>Siste aktivitet</span></div>
-    ${logsHtml}
-  </div>`;
+  ${scoreRow}
+  ${locked}`;
 }
 
 /* ── MIDDAGSKALENDER ── */
@@ -1111,7 +1076,24 @@ function applyDatePicker(){
   renderTab('chores');
 }
 
+let choresTasksFilter = 'both'; // 'chores' | 'tasks' | 'both'
+function setChoresTasksFilter(f){
+  choresTasksFilter = f;
+  renderTab('chores');
+}
 async function renderChores(){
+  const filterBar = `
+    <div class="type-row" style="margin-bottom:14px">
+      <button class="type-chip ${choresTasksFilter==='both'?'active':''}" onclick="setChoresTasksFilter('both')">Begge</button>
+      <button class="type-chip ${choresTasksFilter==='chores'?'active':''}" onclick="setChoresTasksFilter('chores')">Gjeremål</button>
+      <button class="type-chip ${choresTasksFilter==='tasks'?'active':''}" onclick="setChoresTasksFilter('tasks')">Oppgåver</button>
+    </div>`;
+  let html = filterBar;
+  if(choresTasksFilter!=='tasks') html += await renderChoresSection();
+  if(choresTasksFilter!=='chores') html += await renderTasksSection();
+  return html;
+}
+async function renderChoresSection(){
   const isToday = selectedLogDate === dateStr();
 
   const dayLogs=await sb(`chore_logs?user_id=eq.${currentUser.id}&created_at=gte.${selectedLogDate}T00:00:00&created_at=lt.${selectedLogDate}T23:59:59&select=chore_id`);
@@ -1212,7 +1194,7 @@ async function logRecurring(taskId,label,basePts){
 
 
 /* ── TASKS ── */
-async function renderTasks(){
+async function renderTasksSection(){
   const all=await sb(`tasks?select=*&order=created_at.desc`);
   const mine=all.filter(t=>t.assigned_to===currentUser.id);
   const shared=all.filter(t=>!t.assigned_to);
@@ -1240,7 +1222,7 @@ async function renderTasks(){
 }
 async function toggleTask(id,done){
   await sb(`tasks?id=eq.${id}`,{method:'PATCH',headers:HR,body:JSON.stringify({done})});
-  renderTab('tasks');
+  renderTab('chores');
 }
 
 /* ── SHOPPING ── */
@@ -1498,7 +1480,7 @@ async function saveTask(){
     due_date:document.getElementById('mDu')?.value||null,
     pts:Number(document.getElementById('mPt')?.value||0),done:false
   })});
-  closeModal();toast('Oppgåve lagt til');renderTab('tasks');
+  closeModal();toast('Oppgåve lagt til');renderTab('chores');
 }
 
 function showShopModal(){
