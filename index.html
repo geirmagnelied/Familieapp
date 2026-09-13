@@ -252,6 +252,14 @@ body { font-family:var(--font-b); color:var(--text); overflow:hidden; }
 .dinner-cook-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
 .dinner-edit-hint { font-size:11px; color:var(--muted); font-weight:700; flex-shrink:0; align-self:center; }
 
+/* ── Vekeaktivitetar (skule m.m.) ── */
+.activity-day { margin-bottom:14px; }
+.activity-day:last-child { margin-bottom:0; }
+.activity-day-label { font-family:var(--font-h); font-weight:700; font-size:13px; color:var(--charcoal); margin-bottom:6px; text-transform:capitalize; }
+.activity-row { display:flex; align-items:center; gap:7px; font-size:12px; color:var(--charcoal); padding:3px 0; font-weight:600; }
+.activity-time { font-weight:800; color:var(--muted); min-width:98px; flex-shrink:0; }
+.activity-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+
 /* ── Stats / graph ── */
 .stats-period-row { display:flex; gap:6px; margin-bottom:16px; flex-wrap:wrap; }
 .stats-period-btn { flex:1; min-width:60px; padding:10px 8px; background:var(--soft); border:1.5px solid var(--border); border-radius:11px; font-family:var(--font-b); font-size:12px; font-weight:800; color:var(--muted); cursor:pointer; text-align:center; transition:all 0.15s; }
@@ -324,7 +332,7 @@ body { font-family:var(--font-b); color:var(--text); overflow:hidden; }
   <button class="fab" id="fab">＋</button>
   <div id="modal"></div>
   <div id="toastEl"></div>
-  <div class="version-badge">v1.4</div>
+  <div class="version-badge">v1.5</div>
 </div>
 
 <script>
@@ -692,6 +700,57 @@ function shiftDinnerWeek(delta){
   renderTab('dinner');
 }
 
+let activityFilter = 'both'; // 'both' | 'Tale' | 'Tida'
+function setActivityFilter(f){
+  activityFilter = f;
+  renderTab('dinner');
+}
+function fmtHM(t){ return t ? t.slice(0,5) : ''; }
+function localDateStr(d){
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+async function renderWeeklyActivities(monday, sunday){
+  const fromStr = localDateStr(monday), toStr = localDateStr(sunday);
+  let rows = [];
+  try {
+    rows = await sb(`weekly_activities?date=gte.${fromStr}&date=lte.${toStr}&select=*&order=date,start_time`);
+  } catch(e) { return ''; }
+  if(!rows.length) return '';
+
+  const byDate = {};
+  rows.forEach(r=>{ (byDate[r.date] = byDate[r.date]||[]).push(r); });
+
+  const DOW=['måndag','tysdag','onsdag','torsdag','fredag','laurdag','søndag'];
+  let daysHtml='';
+  for(let i=0;i<7;i++){
+    const d=new Date(monday); d.setDate(monday.getDate()+i);
+    const ds=localDateStr(d);
+    let list=byDate[ds]||[];
+    if(activityFilter!=='both') list=list.filter(a=>a.child===activityFilter);
+    if(!list.length) continue;
+    daysHtml += `
+      <div class="activity-day">
+        <div class="activity-day-label">${DOW[i]} ${d.getDate()}.${d.getMonth()+1}</div>
+        ${list.map(a=>{
+          const m=members.find(x=>x.name===a.child);
+          const color=m?memberColor(m.id):'#999';
+          return `<div class="activity-row"><span class="activity-dot" style="background:${color}"></span><span class="activity-time">${fmtHM(a.start_time)}–${fmtHM(a.end_time)}</span><span>${activityFilter==='both'?`<b>${a.child}:</b> `:''}${escapeHtml(a.title)}</span></div>`;
+        }).join('')}
+      </div>`;
+  }
+  if(!daysHtml) return '';
+
+  return `<div class="card">
+    <div class="card-title">Aktivitetar</div>
+    <div class="type-row" style="margin-bottom:14px">
+      <button class="type-chip ${activityFilter==='both'?'active':''}" onclick="setActivityFilter('both')">Begge</button>
+      <button class="type-chip ${activityFilter==='Tale'?'active':''}" onclick="setActivityFilter('Tale')">Tale</button>
+      <button class="type-chip ${activityFilter==='Tida'?'active':''}" onclick="setActivityFilter('Tida')">Tida</button>
+    </div>
+    ${daysHtml}
+  </div>`;
+}
+
 async function renderDinner(){
   const base = new Date();
   base.setDate(base.getDate() + dinnerWeekOffset*7);
@@ -733,6 +792,8 @@ async function renderDinner(){
     : dinnerWeekOffset===-1 ? `Førre veke (v${weekNum(monday)})`
     : `Veke ${weekNum(monday)}`;
 
+  const activitiesHtml = await renderWeeklyActivities(monday, sunday);
+
   return `<div class="card">
     <div class="dinner-week-nav">
       <button class="date-arrow" onclick="shiftDinnerWeek(-1)">‹</button>
@@ -746,7 +807,8 @@ async function renderDinner(){
       Trykk på ein dag for å melde deg som kokk eller skrive kva de skal ete.
       ${currentUser.is_admin ? 'Som administrator kan du endre alle dagar.' : 'Du kan endre dine eigne dagar og ledige dagar.'}
     </div>
-  </div>`;
+  </div>
+  ${activitiesHtml}`;
 }
 
 async function openDinnerModal(ds){
