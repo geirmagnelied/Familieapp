@@ -332,7 +332,7 @@ body { font-family:var(--font-b); color:var(--text); overflow:hidden; }
   <button class="fab" id="fab">＋</button>
   <div id="modal"></div>
   <div id="toastEl"></div>
-  <div class="version-badge">v1.5</div>
+  <div class="version-badge">v1.6</div>
 </div>
 
 <script>
@@ -372,6 +372,9 @@ const REC_TYPES=[
 ];
 
 function isFridayReveal(){const n=new Date();return n.getDay()===5&&n.getHours()>=18;}
+// NB: dateStr() går via UTC (toISOString) — trygt for "no"-tidspunkt, men gir feil dato
+// (éin dag for tidleg) for Date-objekt sett til lokal midnatt (t.d. via mondayOf()+setDate).
+// Bruk localDateStr() for slike kalenderdato-utrekningar.
 function dateStr(d=new Date()){return d.toISOString().slice(0,10);}
 function weekNum(d=new Date()){
   const t=new Date(d);const day=t.getDay()||7;
@@ -757,8 +760,8 @@ async function renderDinner(){
   const monday = mondayOf(base);
   const sunday = new Date(monday); sunday.setDate(monday.getDate()+6);
 
-  const fromStr = dateStr(monday);
-  const toStr = dateStr(sunday);
+  const fromStr = localDateStr(monday);
+  const toStr = localDateStr(sunday);
   const rows = await sb(`dinners?date=gte.${fromStr}&date=lte.${toStr}&select=*`);
   const byDate = {};
   rows.forEach(r => { byDate[r.date] = r; });
@@ -769,7 +772,7 @@ async function renderDinner(){
   let daysHtml = '';
   for (let i=0; i<7; i++){
     const d = new Date(monday); d.setDate(monday.getDate()+i);
-    const ds = dateStr(d);
+    const ds = localDateStr(d);
     const rec = byDate[ds];
     const cook = rec && rec.cook_id ? members.find(m=>m.id===rec.cook_id) : null;
     const isToday = ds === today;
