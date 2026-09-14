@@ -200,6 +200,11 @@ body { font-family:var(--font-b); color:var(--text); overflow:hidden; }
 
 .toast { position:fixed; top:20px; left:50%; transform:translateX(-50%); background:var(--pink-deep); color:#fff; font-family:var(--font-b); font-weight:800; font-size:14px; padding:10px 22px; border-radius:22px; z-index:300; white-space:nowrap; box-shadow:0 4px 16px rgba(180,60,90,0.32); animation:toastpop 2.8s forwards; }
 @keyframes toastpop { 0%{opacity:0;transform:translateX(-50%) translateY(-12px) scale(0.92)} 12%{opacity:1;transform:translateX(-50%) translateY(0) scale(1)} 78%{opacity:1} 100%{opacity:0} }
+.toast-undo { display:inline-flex; align-items:center; gap:12px; animation:toastUndoPop 4.3s forwards; }
+@keyframes toastUndoPop { 0%{opacity:0;transform:translateX(-50%) translateY(-12px) scale(0.92)} 8%{opacity:1;transform:translateX(-50%) translateY(0) scale(1)} 88%{opacity:1} 100%{opacity:0} }
+.toast-undo-btn { background:rgba(255,255,255,0.25); border:1.5px solid rgba(255,255,255,0.5); color:#fff; font-family:var(--font-b); font-weight:800; font-size:12px; padding:4px 12px; border-radius:14px; cursor:pointer; flex-shrink:0; }
+.shop-item.checking { animation:shopPop 0.3s ease; }
+@keyframes shopPop { 0%{transform:scale(0.98)} 45%{transform:scale(1.015)} 100%{transform:scale(1)} }
 .empty { text-align:center; padding:40px 16px; color:var(--muted); }
 .empty p { font-size:14px; font-weight:600; line-height:1.6; }
 /* ── Chat ── */
@@ -346,7 +351,7 @@ body { font-family:var(--font-b); color:var(--text); overflow:hidden; }
   <button class="fab" id="fab">＋</button>
   <div id="modal"></div>
   <div id="toastEl"></div>
-  <div class="version-badge">v1.9</div>
+  <div class="version-badge">v2.0</div>
 </div>
 
 <script>
@@ -1348,22 +1353,39 @@ async function toggleTask(id,done){
 }
 
 /* ── SHOPPING ── */
+let shopShowDone = false;
+const shopPending = {}; // itemId -> timeoutId (kryssa av, men ikkje lagra enno — angre-vindauge)
+const SHOP_UNDO_MS = 4000;
+
+function toggleShopShowDone(){
+  shopShowDone = !shopShowDone;
+  renderTab('shopping');
+}
+
 async function renderShopping(){
   const lists=await sb(`shopping_lists?select=*,shopping_items(*)&order=created_at.desc`);
   if(!lists.length)return`<div class="empty"><p>Ingen handlelister.<br>Trykk + for å opprette.</p></div>`;
-  return lists.map(list=>{
+  const toggleHtml = `<div class="type-row" style="margin-bottom:14px">
+    <button class="type-chip ${shopShowDone?'active':''}" onclick="toggleShopShowDone()">Vis fullførte</button>
+  </div>`;
+  return toggleHtml + lists.map(list=>{
     const items=list.shopping_items||[];
     const done=items.filter(i=>i.done).length;
     const pct=items.length?Math.round(done/items.length*100):0;
+    const visible=items.filter(i=>shopShowDone || !i.done || shopPending[i.id]).sort((a,b)=>a.sort_order-b.sort_order);
+    const itemsHtml = visible.length ? visible.map(item=>{
+      const isDone = item.done || shopPending[item.id];
+      return `
+        <div class="shop-item" data-shop-id="${item.id}">
+          <button class="shop-check ${isDone?'checked':''}" onclick="${item.done?`uncheckShopItem('${item.id}')`:`checkShopItem('${item.id}','${escapeAttr(item.name)}')`}">${isDone?'✓':''}</button>
+          <span class="shop-label ${isDone?'done':''}">${item.name}</span>
+          ${item.qty?`<span class="shop-qty">${item.qty}</span>`:''}
+        </div>`;
+    }).join('') : `<div style="color:var(--muted);font-size:13px;font-weight:600;padding:8px 0">${items.length?'Alt kryssa av':'Ingen varer enno'}</div>`;
     return`<div class="card">
       <div class="card-title">${list.title}</div>
       <div class="prog-row"><div class="prog-bg"><div class="prog-fill" style="width:${pct}%"></div></div><span class="prog-text">${done}/${items.length}</span></div>
-      ${items.sort((a,b)=>a.sort_order-b.sort_order).map(item=>`
-        <div class="shop-item">
-          <button class="shop-check ${item.done?'checked':''}" onclick="toggleShopItem('${item.id}',${!item.done})">${item.done?'✓':''}</button>
-          <span class="shop-label ${item.done?'done':''}">${item.name}</span>
-          ${item.qty?`<span class="shop-qty">${item.qty}</span>`:''}
-        </div>`).join('')}
+      ${itemsHtml}
       <div class="add-row">
         <input class="add-input" id="si_${list.id}" placeholder="Legg til vare" onkeydown="if(event.key==='Enter')addShopItem('${list.id}')">
         <button class="btn-sm" onclick="addShopItem('${list.id}')">+</button>
@@ -1371,8 +1393,31 @@ async function renderShopping(){
     </div>`;
   }).join('');
 }
-async function toggleShopItem(id,done){
-  await sb(`shopping_items?id=eq.${id}`,{method:'PATCH',headers:HR,body:JSON.stringify({done})});renderTab('shopping');
+function checkShopItem(id, name){
+  const row = document.querySelector(`[data-shop-id="${id}"]`);
+  if(row){
+    row.classList.add('checking');
+    const check = row.querySelector('.shop-check');
+    if(check){ check.classList.add('checked'); check.textContent='✓'; }
+    const label = row.querySelector('.shop-label');
+    if(label) label.classList.add('done');
+  }
+  const timeoutId = setTimeout(async ()=>{
+    delete shopPending[id];
+    await sb(`shopping_items?id=eq.${id}`,{method:'PATCH',headers:HR,body:JSON.stringify({done:true})});
+    renderTab('shopping');
+  }, SHOP_UNDO_MS);
+  shopPending[id] = timeoutId;
+  toastUndo(`${name} kryssa av`, ()=>undoShopCheck(id), SHOP_UNDO_MS);
+}
+function undoShopCheck(id){
+  clearTimeout(shopPending[id]);
+  delete shopPending[id];
+  renderTab('shopping');
+}
+async function uncheckShopItem(id){
+  await sb(`shopping_items?id=eq.${id}`,{method:'PATCH',headers:HR,body:JSON.stringify({done:false})});
+  renderTab('shopping');
 }
 async function addShopItem(listId){
   const inp=document.getElementById('si_'+listId);const v=inp?.value.trim();if(!v)return;
@@ -1811,8 +1856,23 @@ function closeModal(){document.getElementById('modal').innerHTML='';}
 let _tt;
 function toast(msg){
   clearTimeout(_tt);
+  _toastUndoCallback=null;
   document.getElementById('toastEl').innerHTML=`<div class="toast">${msg}</div>`;
   _tt=setTimeout(()=>{document.getElementById('toastEl').innerHTML='';},2900);
+}
+
+let _toastUndoCallback=null;
+function toastUndo(msg, onUndo, ms){
+  clearTimeout(_tt);
+  _toastUndoCallback = onUndo;
+  document.getElementById('toastEl').innerHTML=`<div class="toast toast-undo"><span>${msg}</span><button class="toast-undo-btn" onclick="runToastUndo()">Angre</button></div>`;
+  _tt=setTimeout(()=>{document.getElementById('toastEl').innerHTML='';_toastUndoCallback=null;},(ms||4000)+300);
+}
+function runToastUndo(){
+  if(_toastUndoCallback) _toastUndoCallback();
+  _toastUndoCallback=null;
+  clearTimeout(_tt);
+  document.getElementById('toastEl').innerHTML='';
 }
 
 init();
