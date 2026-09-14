@@ -125,6 +125,16 @@ body { font-family:var(--font-b); color:var(--text); overflow:hidden; }
 .add-row { display:flex; gap:8px; margin-top:10px; }
 .add-input { flex:1; background:var(--soft); border:1.5px solid var(--border); color:var(--text); border-radius:10px; font-family:var(--font-b); font-size:14px; padding:9px 12px; }
 .add-input:focus { outline:none; border-color:var(--pink); }
+.search-input { width:100%; background:var(--soft); border:1.5px solid var(--border); color:var(--text); border-radius:10px; font-family:var(--font-b); font-size:14px; padding:10px 12px; }
+.search-input:focus { outline:none; border-color:var(--pink); }
+.recipe-row { display:flex; align-items:center; justify-content:space-between; padding:12px 0; border-bottom:1px solid var(--border); cursor:pointer; }
+.recipe-row:last-child { border-bottom:none; }
+.recipe-row-title { font-weight:700; font-size:14px; color:var(--charcoal); }
+.recipe-row-hint { color:var(--muted); font-size:16px; }
+.recipe-detail-text { font-size:13px; color:var(--charcoal); font-weight:600; line-height:1.6; white-space:pre-wrap; }
+.recipe-pick-row { display:flex; align-items:center; justify-content:space-between; padding:9px 0; border-bottom:1px solid var(--border); cursor:pointer; font-size:13px; font-weight:700; color:var(--charcoal); }
+.recipe-pick-row:last-child { border-bottom:none; }
+.recipe-pick-list { max-height:160px; overflow-y:auto; margin-top:6px; border:1px solid var(--border); border-radius:10px; padding:0 10px; background:var(--soft); }
 .btn-sm { background:var(--pink); color:#fff; border:none; border-radius:10px; font-family:var(--font-b); font-weight:800; font-size:18px; width:40px; cursor:pointer; }
 
 /* Admin */
@@ -318,7 +328,7 @@ body { font-family:var(--font-b); color:var(--text); overflow:hidden; }
       <span class="header-center" id="headerCenter"></span>
       <div class="header-right">
         <span class="user-chip" id="userChip" onclick="logout()"></span>
-        <button class="hamburger-btn" id="hamburgerBtn" onclick="openMenu()" style="display:none">☰</button>
+        <button class="hamburger-btn" id="hamburgerBtn" onclick="openMenu()">☰</button>
       </div>
     </div>
   </div>
@@ -326,17 +336,17 @@ body { font-family:var(--font-b); color:var(--text); overflow:hidden; }
   <div class="content" id="content" style="display:none"></div>
 
   <nav class="nav" id="mainNav" style="display:none">
-    <button class="nav-btn" onclick="switchTab('chores',this)">Gjeremål</button>
     <button class="nav-btn" onclick="switchTab('dinner',this)">Kalender</button>
-    <button class="nav-btn" onclick="switchTab('stats',this)">Statistikk</button>
     <button class="nav-btn" onclick="switchTab('shopping',this)">Handle</button>
     <button class="nav-btn" onclick="switchTab('chat',this)">Chat</button>
+    <button class="nav-btn" onclick="switchTab('chores',this)">Gjeremål</button>
+    <button class="nav-btn" onclick="switchTab('recipes',this)">Oppskrifter</button>
   </nav>
 
   <button class="fab" id="fab">＋</button>
   <div id="modal"></div>
   <div id="toastEl"></div>
-  <div class="version-badge">v1.8</div>
+  <div class="version-badge">v1.9</div>
 </div>
 
 <script>
@@ -583,7 +593,6 @@ function launchApp(){
   document.getElementById('userChip').textContent=currentUser.name;
   const now=new Date();
   document.getElementById('headerCenter').textContent=`${DAYS[now.getDay()]}, veke ${weekNum()}`;
-  if(currentUser.is_admin)document.getElementById('hamburgerBtn').style.display='';
   renderTab('home');
   if(isFridayReveal())setTimeout(()=>showFridayReveal(),600);
 }
@@ -593,7 +602,8 @@ function openMenu(){
     <div class="sheet">
       <div class="sheet-handle"></div>
       <div class="sheet-title">Meny</div>
-      <button class="btn-save" onclick="closeModal();switchTab('admin')">Admin</button>
+      <button class="btn-save" onclick="closeModal();switchTab('stats')">Statistikk</button>
+      ${currentUser.is_admin ? `<button class="btn-save" onclick="closeModal();switchTab('admin')">Admin</button>` : ''}
       <button class="btn-cancel-s" onclick="closeModal()">Lukk</button>
     </div>
   </div>`;
@@ -616,15 +626,17 @@ async function renderTab(tab){
   if(tab==='stats')    el.innerHTML=await renderStats();
   if(tab==='shopping') el.innerHTML=await renderShopping();
   if(tab==='admin')    el.innerHTML=await renderAdmin();
+  if(tab==='recipes')  el.innerHTML=await renderRecipes();
   if(tab==='chat')      { el.innerHTML=await renderChat(); setupChatRealtime(); scrollChatToBottom(); }
   else { teardownChatRealtime(); }
   const fab=document.getElementById('fab');
-  const showFab=(tab==='chores'&&choresTasksFilter!=='chores')||tab==='shopping'||tab==='admin'||tab==='dinner';
+  const showFab=(tab==='chores'&&choresTasksFilter!=='chores')||tab==='shopping'||tab==='admin'||tab==='dinner'||tab==='recipes';
   fab.style.display=showFab?'flex':'none';
   if(tab==='chores'&&choresTasksFilter!=='chores') fab.onclick=()=>showTaskModal();
   if(tab==='shopping') fab.onclick=()=>showShopModal();
   if(tab==='admin')    fab.onclick=()=>showAdminAddModal();
   if(tab==='dinner')   fab.onclick=()=>showActivityModal();
+  if(tab==='recipes')  fab.onclick=()=>showRecipeModal();
 }
 
 /* ── HOME ── */
@@ -664,6 +676,7 @@ async function renderHome(){
       <div class="today-meal ${hasPlan && dRec.meal ? '' : 'empty'}">${hasPlan && dRec.meal ? escapeHtml(dRec.meal) : 'Ingen middag planlagt'}</div>
       ${cook ? `<div class="today-cook">${cook.name} lagar</div>` : ''}
       ${dRec && dRec.notes ? `<div class="today-notes">${escapeHtml(dRec.notes)}</div>` : ''}
+      ${dRec && dRec.recipe_id ? `<div class="today-cook" style="cursor:pointer;text-decoration:underline" onclick="openRecipeDetail('${dRec.recipe_id}')">Sjå oppskrift</div>` : ''}
       <button class="today-action today-action-wide" onclick="openDinnerModal('${ds}')">${hasPlan ? 'Endre plan' : 'Planlegg middag'}</button>
     </div>`;
   } catch(e) { dinnerCard = ''; }
@@ -749,6 +762,7 @@ async function renderDinner(){
         <div class="today-meal ${hasPlan && dRec.meal ? '' : 'empty'}">${hasPlan && dRec.meal ? escapeHtml(dRec.meal) : 'Ingen middag planlagt'}</div>
         ${cook ? `<div class="today-cook">${cook.name} lagar</div>` : ''}
         ${dRec && dRec.notes ? `<div class="today-notes">${escapeHtml(dRec.notes)}</div>` : ''}
+        ${dRec && dRec.recipe_id ? `<div class="today-cook" style="cursor:pointer;text-decoration:underline" onclick="openRecipeDetail('${dRec.recipe_id}')">Sjå oppskrift</div>` : ''}
       </div>
       <button class="today-action" onclick="openDinnerModal('${ds}')">${hasPlan?'Endre':'Planlegg'}</button>
     </div>
@@ -829,12 +843,33 @@ async function deleteActivity(id){
   toast('Aktivitet sletta'); renderTab('dinner');
 }
 
+let dinnerRecipesCache = [];
+function filterDinnerRecipePicker(){
+  const q = document.getElementById('dRecipeSearch')?.value.trim().toLowerCase() || '';
+  const el = document.getElementById('dRecipePickList');
+  if(!el) return;
+  if(!q){ el.innerHTML=''; el.style.display='none'; return; }
+  const list = dinnerRecipesCache.filter(r=>recipeMatches(r,q));
+  el.style.display='block';
+  el.innerHTML = list.length ? list.map(r=>`<div class="recipe-pick-row" onclick="pickDinnerRecipe('${r.id}')">${escapeHtml(r.title)}</div>`).join('') : `<div class="recipe-pick-row" style="cursor:default;color:var(--muted)">Ingen treff</div>`;
+}
+function pickDinnerRecipe(id){
+  const r = dinnerRecipesCache.find(x=>x.id===id);
+  if(!r) return;
+  document.getElementById('dMeal').value = r.title;
+  document.getElementById('dRecipeId').value = r.id;
+  document.getElementById('dRecipeSearch').value = '';
+  const el = document.getElementById('dRecipePickList');
+  el.innerHTML=''; el.style.display='none';
+}
+
 async function openDinnerModal(ds){
   let rec = null;
   try {
     const rows = await sb(`dinners?date=eq.${ds}&select=*`);
     rec = rows[0] || null;
   } catch(e) { /* new entry */ }
+  try { dinnerRecipesCache = await sb('recipes?select=id,title,ingredients&order=title'); } catch(e) { dinnerRecipesCache = []; }
 
   const cookId = rec ? rec.cook_id : '';
   const canEdit = currentUser.is_admin || !rec || !rec.cook_id || rec.cook_id === currentUser.id;
@@ -872,7 +907,13 @@ async function openDinnerModal(ds){
       </div>
       <div class="field">
         <label>Kva skal vi ete</label>
-        <input id="dMeal" placeholder="t.d. Fiskegrateng" value="${rec && rec.meal ? escapeAttr(rec.meal) : ''}">
+        <input id="dMeal" oninput="document.getElementById('dRecipeId').value=''" placeholder="t.d. Fiskegrateng" value="${rec && rec.meal ? escapeAttr(rec.meal) : ''}">
+        <input type="hidden" id="dRecipeId" value="${rec && rec.recipe_id ? rec.recipe_id : ''}">
+      </div>
+      <div class="field">
+        <label>Eller vel ei lagra oppskrift</label>
+        <input class="search-input" id="dRecipeSearch" placeholder="Søk i oppskrifter …" oninput="filterDinnerRecipePicker()">
+        <div class="recipe-pick-list" id="dRecipePickList" style="display:none"></div>
       </div>
       <div class="field">
         <label>Notat (valfritt)</label>
@@ -893,8 +934,9 @@ async function saveDinner(ds){
   const cook_id = document.getElementById('dCook')?.value || null;
   const meal = document.getElementById('dMeal')?.value.trim() || null;
   const notes = document.getElementById('dNotes')?.value.trim() || null;
+  const recipe_id = document.getElementById('dRecipeId')?.value || null;
 
-  const body = { date: ds, cook_id: cook_id || null, meal, notes, created_by: currentUser.id };
+  const body = { date: ds, cook_id: cook_id || null, meal, notes, recipe_id, created_by: currentUser.id };
 
   try {
     // Upsert on the unique date column
@@ -1336,6 +1378,86 @@ async function addShopItem(listId){
   const inp=document.getElementById('si_'+listId);const v=inp?.value.trim();if(!v)return;
   await sb('shopping_items',{method:'POST',headers:HR,body:JSON.stringify({list_id:listId,name:v,qty:'',done:false})});
   renderTab('shopping');
+}
+
+/* ── RECIPES ── */
+let recipesCache = [];
+let recipeSearch = '';
+
+function recipeMatches(r, q){
+  return r.title.toLowerCase().includes(q) || (r.ingredients||'').toLowerCase().includes(q);
+}
+function recipeListHtml(recipes, q){
+  const qq = q.trim().toLowerCase();
+  const filtered = qq ? recipes.filter(r=>recipeMatches(r,qq)) : recipes;
+  if(!filtered.length) return `<div style="color:var(--muted);font-size:13px;font-weight:600;padding:8px 0">${qq?'Ingen treff':'Ingen oppskrifter enno'}</div>`;
+  return filtered.map(r=>`
+    <div class="recipe-row" onclick="openRecipeDetail('${r.id}')">
+      <span class="recipe-row-title">${escapeHtml(r.title)}</span>
+      <span class="recipe-row-hint">›</span>
+    </div>`).join('');
+}
+function filterRecipesUI(){
+  recipeSearch = document.getElementById('recipeSearchInput')?.value || '';
+  const listEl = document.getElementById('recipeList');
+  if(listEl) listEl.innerHTML = recipeListHtml(recipesCache, recipeSearch);
+}
+async function renderRecipes(){
+  recipesCache = await sb('recipes?select=*&order=title');
+  return `
+  <div class="card">
+    <input class="search-input" id="recipeSearchInput" placeholder="Søk i oppskrifter …" value="${escapeAttr(recipeSearch)}" oninput="filterRecipesUI()">
+  </div>
+  <div class="card">
+    <div class="card-title">Oppskrifter</div>
+    <div id="recipeList">${recipeListHtml(recipesCache, recipeSearch)}</div>
+  </div>`;
+}
+function showRecipeModal(){
+  document.getElementById('modal').innerHTML = `
+  <div class="backdrop" onclick="if(event.target===this)closeModal()">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-title">Ny oppskrift</div>
+      <div class="field"><label>Namn</label><input id="rcTitle" placeholder="t.d. Fiskegrateng"></div>
+      <div class="field"><label>Ingrediensar</label><textarea id="rcIngredients" placeholder="t.d. 500 g fisk, 2 dl mjøl, 1 laurbærblad"></textarea></div>
+      <div class="field"><label>Framgangsmåte</label><textarea id="rcInstructions" placeholder="Steg for steg …"></textarea></div>
+      <button class="btn-save" onclick="saveRecipe()">Lagre</button>
+      <button class="btn-cancel-s" onclick="closeModal()">Avbryt</button>
+    </div>
+  </div>`;
+}
+async function saveRecipe(){
+  const title = document.getElementById('rcTitle')?.value.trim();
+  const ingredients = document.getElementById('rcIngredients')?.value.trim() || null;
+  const instructions = document.getElementById('rcInstructions')?.value.trim() || null;
+  if(!title){ toast('Skriv inn eit namn'); return; }
+  await sb('recipes',{method:'POST',headers:HR,body:JSON.stringify({title,ingredients,instructions,created_by:currentUser.id})});
+  closeModal(); toast('Oppskrift lagra'); renderTab('recipes');
+}
+async function openRecipeDetail(id){
+  let r = recipesCache.find(x=>x.id===id);
+  if(!r){
+    try { const rows = await sb(`recipes?id=eq.${id}&select=*`); r = rows[0]; } catch(e) {}
+  }
+  if(!r){ toast('Fann ikkje oppskrifta'); return; }
+  const canDelete = currentUser.is_admin || r.created_by===currentUser.id;
+  document.getElementById('modal').innerHTML = `
+  <div class="backdrop" onclick="if(event.target===this)closeModal()">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-title">${escapeHtml(r.title)}</div>
+      ${r.ingredients?`<div class="field"><label>Ingrediensar</label><div class="recipe-detail-text">${escapeHtml(r.ingredients)}</div></div>`:''}
+      ${r.instructions?`<div class="field"><label>Framgangsmåte</label><div class="recipe-detail-text">${escapeHtml(r.instructions)}</div></div>`:''}
+      ${canDelete?`<button class="btn-cancel-s" onclick="deleteRecipe('${r.id}')" style="color:var(--pink-deep);border-color:var(--pink)">Slett oppskrift</button>`:''}
+      <button class="btn-cancel-s" onclick="closeModal()">Lukk</button>
+    </div>
+  </div>`;
+}
+async function deleteRecipe(id){
+  if(!confirm('Slette denne oppskrifta?')) return;
+  await sb(`recipes?id=eq.${id}`,{method:'DELETE',headers:H});
+  closeModal(); toast('Oppskrift sletta'); renderTab('recipes');
 }
 
 /* ── ADMIN ── */
