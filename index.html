@@ -259,6 +259,9 @@ body { font-family:var(--font-b); color:var(--text); overflow:hidden; }
 .activity-row { display:flex; align-items:center; gap:7px; font-size:12px; color:var(--charcoal); padding:3px 0; font-weight:600; }
 .activity-time { font-weight:800; color:var(--muted); min-width:98px; flex-shrink:0; }
 .activity-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+.activity-title { flex:1; min-width:0; }
+.activity-del { color:var(--muted); font-weight:800; cursor:pointer; padding:2px 8px; flex-shrink:0; }
+.activity-del:active { color:var(--pink-deep); }
 
 /* ── Stats / graph ── */
 .stats-period-row { display:flex; gap:6px; margin-bottom:16px; flex-wrap:wrap; }
@@ -332,7 +335,7 @@ body { font-family:var(--font-b); color:var(--text); overflow:hidden; }
   <button class="fab" id="fab">＋</button>
   <div id="modal"></div>
   <div id="toastEl"></div>
-  <div class="version-badge">v1.6</div>
+  <div class="version-badge">v1.7</div>
 </div>
 
 <script>
@@ -615,11 +618,12 @@ async function renderTab(tab){
   if(tab==='chat')      { el.innerHTML=await renderChat(); setupChatRealtime(); scrollChatToBottom(); }
   else { teardownChatRealtime(); }
   const fab=document.getElementById('fab');
-  const showFab=(tab==='chores'&&choresTasksFilter!=='chores')||tab==='shopping'||tab==='admin';
+  const showFab=(tab==='chores'&&choresTasksFilter!=='chores')||tab==='shopping'||tab==='admin'||tab==='dinner';
   fab.style.display=showFab?'flex':'none';
   if(tab==='chores'&&choresTasksFilter!=='chores') fab.onclick=()=>showTaskModal();
   if(tab==='shopping') fab.onclick=()=>showShopModal();
   if(tab==='admin')    fab.onclick=()=>showAdminAddModal();
+  if(tab==='dinner')   fab.onclick=()=>showActivityModal();
 }
 
 /* ── HOME ── */
@@ -737,7 +741,8 @@ async function renderWeeklyActivities(monday, sunday){
         ${list.map(a=>{
           const m=members.find(x=>x.name===a.child);
           const color=m?memberColor(m.id):'#999';
-          return `<div class="activity-row"><span class="activity-dot" style="background:${color}"></span><span class="activity-time">${fmtHM(a.start_time)}–${fmtHM(a.end_time)}</span><span>${activityFilter==='both'?`<b>${a.child}:</b> `:''}${escapeHtml(a.title)}</span></div>`;
+          const canDelete = currentUser.is_admin || (a.child===currentUser.name && !a.source_file);
+          return `<div class="activity-row"><span class="activity-dot" style="background:${color}"></span><span class="activity-time">${fmtHM(a.start_time)}–${fmtHM(a.end_time)}</span><span class="activity-title">${activityFilter==='both'?`<b>${a.child}:</b> `:''}${escapeHtml(a.title)}</span>${canDelete?`<span class="activity-del" onclick="deleteActivity('${a.id}')">✕</span>`:''}</div>`;
         }).join('')}
       </div>`;
   }
@@ -752,6 +757,50 @@ async function renderWeeklyActivities(monday, sunday){
     </div>
     ${daysHtml}
   </div>`;
+}
+
+function showActivityModal(){
+  const isAdmin = currentUser.is_admin;
+  const today = localDateStr(new Date());
+  document.getElementById('modal').innerHTML = `
+  <div class="backdrop" onclick="if(event.target===this)closeModal()">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-title">Ny aktivitet</div>
+      ${isAdmin ? `
+      <div class="field"><label>Kven gjeld det</label>
+        <select id="actChild">${members.map(m=>`<option value="${escapeAttr(m.name)}" ${m.name===currentUser.name?'selected':''}>${m.name}</option>`).join('')}</select>
+      </div>` : `<input type="hidden" id="actChild" value="${escapeAttr(currentUser.name)}">`}
+      <div class="field"><label>Dato</label><input type="date" id="actDate" value="${today}"></div>
+      <div class="field-row">
+        <div class="field"><label>Frå kl. (valfritt)</label><input type="time" id="actStart"></div>
+        <div class="field"><label>Til kl. (valfritt)</label><input type="time" id="actEnd"></div>
+      </div>
+      <div class="field"><label>Kva skal skje</label><input id="actTitle" placeholder="t.d. Fotballtrening"></div>
+      <div class="field"><label>Notat (valfritt)</label><textarea id="actNote" placeholder="t.d. Hugs leggskinn"></textarea></div>
+      <button class="btn-save" onclick="saveActivity()">Lagre</button>
+      <button class="btn-cancel-s" onclick="closeModal()">Avbryt</button>
+    </div>
+  </div>`;
+}
+async function saveActivity(){
+  const child = document.getElementById('actChild')?.value;
+  const date = document.getElementById('actDate')?.value;
+  const start = document.getElementById('actStart')?.value || null;
+  const end = document.getElementById('actEnd')?.value || null;
+  const title = document.getElementById('actTitle')?.value.trim();
+  const note = document.getElementById('actNote')?.value.trim() || null;
+  if(!child || !date || !title){ toast('Fyll ut dato og kva som skal skje'); return; }
+  if(start && end && end < start){ toast('Sluttid må vere etter starttid'); return; }
+  await sb('weekly_activities',{method:'POST',headers:HR,body:JSON.stringify({
+    child, date, start_time: start, end_time: end || start, title, note
+  })});
+  closeModal(); toast('Aktivitet lagt til'); renderTab('dinner');
+}
+async function deleteActivity(id){
+  if(!confirm('Slette denne aktiviteten?')) return;
+  await sb(`weekly_activities?id=eq.${id}`,{method:'DELETE',headers:H});
+  toast('Aktivitet sletta'); renderTab('dinner');
 }
 
 async function renderDinner(){
