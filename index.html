@@ -252,16 +252,17 @@ body { font-family:var(--font-b); color:var(--text); overflow:hidden; }
 .dinner-cook-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
 .dinner-edit-hint { font-size:11px; color:var(--muted); font-weight:700; flex-shrink:0; align-self:center; }
 
-/* ── Vekeaktivitetar (skule m.m.) ── */
-.activity-day { margin-bottom:14px; }
-.activity-day:last-child { margin-bottom:0; }
-.activity-day-label { font-family:var(--font-h); font-weight:700; font-size:13px; color:var(--charcoal); margin-bottom:6px; text-transform:capitalize; }
+/* ── Aktivitetar (skule, fritid m.m.) ── */
+.activity-group-label { font-family:var(--font-h); font-weight:700; font-size:13px; color:var(--charcoal); margin-bottom:6px; }
 .activity-row { display:flex; align-items:center; gap:7px; font-size:12px; color:var(--charcoal); padding:3px 0; font-weight:600; }
 .activity-time { font-weight:800; color:var(--muted); min-width:98px; flex-shrink:0; }
 .activity-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
 .activity-title { flex:1; min-width:0; }
 .activity-del { color:var(--muted); font-weight:800; cursor:pointer; padding:2px 8px; flex-shrink:0; }
 .activity-del:active { color:var(--pink-deep); }
+.cal-empty { font-size:12px; color:var(--muted); font-weight:600; padding:4px 0 8px; }
+.who-chip { padding:6px 13px; border-radius:20px; font-size:12px; font-weight:700; border:2px solid var(--border); cursor:pointer; font-family:var(--font-b); background:var(--soft); color:var(--muted); transition:all 0.15s; }
+.dinner-week-label { cursor:pointer; }
 
 /* ── Stats / graph ── */
 .stats-period-row { display:flex; gap:6px; margin-bottom:16px; flex-wrap:wrap; }
@@ -335,7 +336,7 @@ body { font-family:var(--font-b); color:var(--text); overflow:hidden; }
   <button class="fab" id="fab">＋</button>
   <div id="modal"></div>
   <div id="toastEl"></div>
-  <div class="version-badge">v1.7</div>
+  <div class="version-badge">v1.8</div>
 </div>
 
 <script>
@@ -376,7 +377,7 @@ const REC_TYPES=[
 
 function isFridayReveal(){const n=new Date();return n.getDay()===5&&n.getHours()>=18;}
 // NB: dateStr() går via UTC (toISOString) — trygt for "no"-tidspunkt, men gir feil dato
-// (éin dag for tidleg) for Date-objekt sett til lokal midnatt (t.d. via mondayOf()+setDate).
+// (éin dag for tidleg) for Date-objekt sett til lokal midnatt via setHours(0,0,0,0)+setDate.
 // Bruk localDateStr() for slike kalenderdato-utrekningar.
 function dateStr(d=new Date()){return d.toISOString().slice(0,10);}
 function weekNum(d=new Date()){
@@ -691,72 +692,97 @@ async function renderHome(){
   ${locked}`;
 }
 
-/* ── MIDDAGSKALENDER ── */
-let dinnerWeekOffset = 0; // 0 = this week, 1 = next week, -1 = last week
-
-function mondayOf(d){
-  const t = new Date(d);
-  const dow = t.getDay() || 7;
-  t.setDate(t.getDate() - dow + 1);
-  t.setHours(0,0,0,0);
-  return t;
-}
-
-function shiftDinnerWeek(delta){
-  dinnerWeekOffset += delta;
-  renderTab('dinner');
-}
-
-let activityFilter = 'both'; // 'both' | 'Tale' | 'Tida'
-function setActivityFilter(f){
-  activityFilter = f;
-  renderTab('dinner');
-}
-function fmtHM(t){ return t ? t.slice(0,5) : ''; }
+/* ── KALENDER (dag-visning: middag + aktivitetar) ── */
 function localDateStr(d){
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
-async function renderWeeklyActivities(monday, sunday){
-  const fromStr = localDateStr(monday), toStr = localDateStr(sunday);
-  let rows = [];
-  try {
-    rows = await sb(`weekly_activities?date=gte.${fromStr}&date=lte.${toStr}&select=*&order=date,start_time`);
-  } catch(e) { return ''; }
-  if(!rows.length) return '';
+function fmtHM(t){ return t ? t.slice(0,5) : ''; }
 
-  const byDate = {};
-  rows.forEach(r=>{ (byDate[r.date] = byDate[r.date]||[]).push(r); });
+let calDayOffset = 0; // 0 = i dag, + = framover, - = bakover
+let calTypeFilter = 'all'; // 'all' | 'middag' | 'dag' | 'ettermiddag'
+let calWhoFilter = new Set(['Tida','Tale','Mari','Geir']);
+const CAL_AFTERNOON_CUTOFF = '15:00';
 
-  const DOW=['måndag','tysdag','onsdag','torsdag','fredag','laurdag','søndag'];
-  let daysHtml='';
-  for(let i=0;i<7;i++){
-    const d=new Date(monday); d.setDate(monday.getDate()+i);
-    const ds=localDateStr(d);
-    let list=byDate[ds]||[];
-    if(activityFilter!=='both') list=list.filter(a=>a.child===activityFilter);
-    if(!list.length) continue;
-    daysHtml += `
-      <div class="activity-day">
-        <div class="activity-day-label">${DOW[i]} ${d.getDate()}.${d.getMonth()+1}</div>
-        ${list.map(a=>{
-          const m=members.find(x=>x.name===a.child);
-          const color=m?memberColor(m.id):'#999';
-          const canDelete = currentUser.is_admin || (a.child===currentUser.name && !a.source_file);
-          return `<div class="activity-row"><span class="activity-dot" style="background:${color}"></span><span class="activity-time">${fmtHM(a.start_time)}–${fmtHM(a.end_time)}</span><span class="activity-title">${activityFilter==='both'?`<b>${a.child}:</b> `:''}${escapeHtml(a.title)}</span>${canDelete?`<span class="activity-del" onclick="deleteActivity('${a.id}')">✕</span>`:''}</div>`;
-        }).join('')}
-      </div>`;
-  }
-  if(!daysHtml) return '';
+function shiftCalDay(delta){ calDayOffset += delta; renderTab('dinner'); }
+function resetCalDay(){ calDayOffset = 0; renderTab('dinner'); }
+function setCalType(t){ calTypeFilter = t; renderTab('dinner'); }
+function toggleCalWho(name){
+  if(calWhoFilter.has(name)) calWhoFilter.delete(name); else calWhoFilter.add(name);
+  renderTab('dinner');
+}
+
+function activityRowHtml(a, showWho){
+  const m=members.find(x=>x.name===a.child);
+  const color=m?memberColor(m.id):'#999';
+  const canDelete = currentUser.is_admin || (a.child===currentUser.name && !a.source_file);
+  const time = a.end_time && a.end_time!==a.start_time ? `${fmtHM(a.start_time)}–${fmtHM(a.end_time)}` : fmtHM(a.start_time);
+  return `<div class="activity-row"><span class="activity-dot" style="background:${color}"></span><span class="activity-time">${time}</span><span class="activity-title">${showWho?`<b>${a.child}:</b> `:''}${escapeHtml(a.title)}</span>${canDelete?`<span class="activity-del" onclick="deleteActivity('${a.id}')">✕</span>`:''}</div>`;
+}
+
+async function renderDinner(){
+  const d = new Date(); d.setDate(d.getDate()+calDayOffset);
+  const ds = localDateStr(d);
+  const today = localDateStr(new Date());
+  const DOWFULL=['søndag','måndag','tysdag','onsdag','torsdag','fredag','laurdag'];
+  const dayLabel = calDayOffset===0 ? 'I dag' : calDayOffset===1 ? 'I morgon' : calDayOffset===-1 ? 'I går' : DOWFULL[d.getDay()];
+
+  let dRec = null;
+  try { const rows = await sb(`dinners?date=eq.${ds}&select=*`); dRec = rows[0]||null; } catch(e) {}
+  const cook = dRec && dRec.cook_id ? members.find(m=>m.id===dRec.cook_id) : null;
+  const hasPlan = dRec && (dRec.meal || dRec.cook_id);
+
+  let acts = [];
+  try { acts = await sb(`weekly_activities?date=eq.${ds}&select=*&order=start_time`); } catch(e) {}
+  acts = acts.filter(a=>calWhoFilter.has(a.child));
+  const dayActs = acts.filter(a=> !a.start_time || a.start_time < CAL_AFTERNOON_CUTOFF);
+  const eveActs = acts.filter(a=> a.start_time && a.start_time >= CAL_AFTERNOON_CUTOFF);
+
+  const showMiddag = calTypeFilter==='all' || calTypeFilter==='middag';
+  const showDag = calTypeFilter==='all' || calTypeFilter==='dag';
+  const showEtterm = calTypeFilter==='all' || calTypeFilter==='ettermiddag';
+
+  const middagHtml = !showMiddag ? '' : `
+  <div class="card today-card">
+    <div class="today-row">
+      <div style="flex:1;min-width:0">
+        <div class="today-label">Middag</div>
+        <div class="today-meal ${hasPlan && dRec.meal ? '' : 'empty'}">${hasPlan && dRec.meal ? escapeHtml(dRec.meal) : 'Ingen middag planlagt'}</div>
+        ${cook ? `<div class="today-cook">${cook.name} lagar</div>` : ''}
+        ${dRec && dRec.notes ? `<div class="today-notes">${escapeHtml(dRec.notes)}</div>` : ''}
+      </div>
+      <button class="today-action" onclick="openDinnerModal('${ds}')">${hasPlan?'Endre':'Planlegg'}</button>
+    </div>
+  </div>`;
+
+  const actHtml = (!showDag && !showEtterm) ? '' : `
+  <div class="card">
+    <div class="card-title">Aktivitetar</div>
+    ${showDag ? `<div class="activity-group-label">Dag (til ${CAL_AFTERNOON_CUTOFF})</div>${dayActs.length?dayActs.map(a=>activityRowHtml(a,true)).join(''):'<div class="cal-empty">Ingen aktivitetar</div>'}` : ''}
+    ${showEtterm ? `<div class="activity-group-label" style="margin-top:${showDag?'14px':'0'}">Ettermiddag (frå ${CAL_AFTERNOON_CUTOFF})</div>${eveActs.length?eveActs.map(a=>activityRowHtml(a,true)).join(''):'<div class="cal-empty">Ingen aktivitetar</div>'}` : ''}
+  </div>`;
 
   return `<div class="card">
-    <div class="card-title">Aktivitetar</div>
-    <div class="type-row" style="margin-bottom:14px">
-      <button class="type-chip ${activityFilter==='both'?'active':''}" onclick="setActivityFilter('both')">Begge</button>
-      <button class="type-chip ${activityFilter==='Tale'?'active':''}" onclick="setActivityFilter('Tale')">Tale</button>
-      <button class="type-chip ${activityFilter==='Tida'?'active':''}" onclick="setActivityFilter('Tida')">Tida</button>
+    <div class="dinner-week-nav">
+      <button class="date-arrow" onclick="shiftCalDay(-1)">‹</button>
+      <span class="dinner-week-label" onclick="resetCalDay()">${dayLabel} · ${d.getDate()}.${d.getMonth()+1}</span>
+      <button class="date-arrow" onclick="shiftCalDay(1)">›</button>
     </div>
-    ${daysHtml}
-  </div>`;
+    <div class="type-row" style="margin-bottom:10px">
+      <button class="type-chip ${calTypeFilter==='all'?'active':''}" onclick="setCalType('all')">Alt</button>
+      <button class="type-chip ${calTypeFilter==='middag'?'active':''}" onclick="setCalType('middag')">Middag</button>
+      <button class="type-chip ${calTypeFilter==='dag'?'active':''}" onclick="setCalType('dag')">Dag</button>
+      <button class="type-chip ${calTypeFilter==='ettermiddag'?'active':''}" onclick="setCalType('ettermiddag')">Ettermiddag</button>
+    </div>
+    <div class="type-row">
+      ${members.filter(m=>['Tida','Tale','Mari','Geir','Emmi'].includes(m.name)).map(m=>{
+        const on = calWhoFilter.has(m.name);
+        const c = memberColor(m.id);
+        return `<button class="who-chip ${on?'active':''}" style="${on?`background:${c}22;color:${c};border-color:${c}`:''}" onclick="toggleCalWho('${m.name}')">${m.name}</button>`;
+      }).join('')}
+    </div>
+  </div>
+  ${middagHtml}
+  ${actHtml}`;
 }
 
 function showActivityModal(){
@@ -801,66 +827,6 @@ async function deleteActivity(id){
   if(!confirm('Slette denne aktiviteten?')) return;
   await sb(`weekly_activities?id=eq.${id}`,{method:'DELETE',headers:H});
   toast('Aktivitet sletta'); renderTab('dinner');
-}
-
-async function renderDinner(){
-  const base = new Date();
-  base.setDate(base.getDate() + dinnerWeekOffset*7);
-  const monday = mondayOf(base);
-  const sunday = new Date(monday); sunday.setDate(monday.getDate()+6);
-
-  const fromStr = localDateStr(monday);
-  const toStr = localDateStr(sunday);
-  const rows = await sb(`dinners?date=gte.${fromStr}&date=lte.${toStr}&select=*`);
-  const byDate = {};
-  rows.forEach(r => { byDate[r.date] = r; });
-
-  const today = dateStr();
-  const DOW = ['Man','Tys','Ons','Tor','Fre','Lau','Sun'];
-
-  let daysHtml = '';
-  for (let i=0; i<7; i++){
-    const d = new Date(monday); d.setDate(monday.getDate()+i);
-    const ds = localDateStr(d);
-    const rec = byDate[ds];
-    const cook = rec && rec.cook_id ? members.find(m=>m.id===rec.cook_id) : null;
-    const isToday = ds === today;
-    daysHtml += `
-      <div class="dinner-day ${isToday?'is-today':''}" onclick="openDinnerModal('${ds}')">
-        <div class="dinner-date-col">
-          <div class="dinner-dow">${DOW[i]}</div>
-          <div class="dinner-dom">${d.getDate()}</div>
-        </div>
-        <div class="dinner-body">
-          <div class="dinner-meal ${rec && rec.meal ? '' : 'empty'}">${rec && rec.meal ? escapeHtml(rec.meal) : 'Ikkje planlagt'}</div>
-          ${cook ? `<span class="dinner-cook-pill" style="background:${memberColor(cook.id)}22;color:${memberColor(cook.id)}"><span class="dinner-cook-dot" style="background:${memberColor(cook.id)}"></span>${cook.name}</span>` : ''}
-        </div>
-        <span class="dinner-edit-hint">›</span>
-      </div>`;
-  }
-
-  const weekLabel = dinnerWeekOffset===0 ? `Denne veka (v${weekNum(monday)})`
-    : dinnerWeekOffset===1 ? `Neste veke (v${weekNum(monday)})`
-    : dinnerWeekOffset===-1 ? `Førre veke (v${weekNum(monday)})`
-    : `Veke ${weekNum(monday)}`;
-
-  const activitiesHtml = await renderWeeklyActivities(monday, sunday);
-
-  return `<div class="card">
-    <div class="dinner-week-nav">
-      <button class="date-arrow" onclick="shiftDinnerWeek(-1)">‹</button>
-      <span class="dinner-week-label">${weekLabel}</span>
-      <button class="date-arrow" onclick="shiftDinnerWeek(1)">›</button>
-    </div>
-    ${daysHtml}
-  </div>
-  <div class="card">
-    <div style="font-size:13px;color:var(--muted);font-weight:600;line-height:1.5">
-      Trykk på ein dag for å melde deg som kokk eller skrive kva de skal ete.
-      ${currentUser.is_admin ? 'Som administrator kan du endre alle dagar.' : 'Du kan endre dine eigne dagar og ledige dagar.'}
-    </div>
-  </div>
-  ${activitiesHtml}`;
 }
 
 async function openDinnerModal(ds){
