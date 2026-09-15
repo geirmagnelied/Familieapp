@@ -275,6 +275,9 @@ body { font-family:var(--font-b); color:var(--text); overflow:hidden; }
 .activity-title { flex:1; min-width:0; }
 .activity-del { color:var(--muted); font-weight:800; cursor:pointer; padding:2px 8px; flex-shrink:0; }
 .activity-del:active { color:var(--pink-deep); }
+.activity-row.editable { cursor:pointer; }
+.activity-row.editable:active { background:var(--soft); border-radius:8px; }
+.activity-repeat-icon { color:var(--muted); font-size:11px; }
 .cal-empty { font-size:12px; color:var(--muted); font-weight:600; padding:4px 0 8px; }
 .who-chip { padding:6px 13px; border-radius:20px; font-size:12px; font-weight:700; border:2px solid var(--border); cursor:pointer; font-family:var(--font-b); background:var(--soft); color:var(--muted); transition:all 0.15s; }
 .dinner-week-label { cursor:pointer; }
@@ -351,7 +354,7 @@ body { font-family:var(--font-b); color:var(--text); overflow:hidden; }
   <button class="fab" id="fab">＋</button>
   <div id="modal"></div>
   <div id="toastEl"></div>
-  <div class="version-badge">v2.0</div>
+  <div class="version-badge">v2.1</div>
 </div>
 
 <script>
@@ -732,9 +735,9 @@ function toggleCalWho(name){
 function activityRowHtml(a, showWho){
   const m=members.find(x=>x.name===a.child);
   const color=m?memberColor(m.id):'#999';
-  const canDelete = currentUser.is_admin || (a.child===currentUser.name && !a.source_file);
+  const canEdit = currentUser.is_admin || (a.child===currentUser.name && !a.source_file);
   const time = a.end_time && a.end_time!==a.start_time ? `${fmtHM(a.start_time)}–${fmtHM(a.end_time)}` : fmtHM(a.start_time);
-  return `<div class="activity-row"><span class="activity-dot" style="background:${color}"></span><span class="activity-time">${time}</span><span class="activity-title">${showWho?`<b>${a.child}:</b> `:''}${escapeHtml(a.title)}</span>${canDelete?`<span class="activity-del" onclick="deleteActivity('${a.id}')">✕</span>`:''}</div>`;
+  return `<div class="activity-row ${canEdit?'editable':''}" ${canEdit?`onclick="openActivityEditModal('${a.id}')"`:''}><span class="activity-dot" style="background:${color}"></span><span class="activity-time">${time}</span><span class="activity-title">${showWho?`<b>${a.child}:</b> `:''}${escapeHtml(a.title)}${a.recurrence_id?' <span class=\"activity-repeat-icon\">↻</span>':''}</span>${canEdit?`<span class="activity-del" onclick="event.stopPropagation();deleteActivity('${a.id}')">✕</span>`:''}</div>`;
 }
 
 async function renderDinner(){
@@ -804,6 +807,7 @@ async function renderDinner(){
   ${actHtml}`;
 }
 
+const ACTIVITY_REPEAT_COUNT = { daily:60, weekly:26, monthly:12, yearly:5 };
 function showActivityModal(){
   const isAdmin = currentUser.is_admin;
   const today = localDateStr(new Date());
@@ -823,10 +827,37 @@ function showActivityModal(){
       </div>
       <div class="field"><label>Kva skal skje</label><input id="actTitle" placeholder="t.d. Fotballtrening"></div>
       <div class="field"><label>Notat (valfritt)</label><textarea id="actNote" placeholder="t.d. Hugs leggskinn"></textarea></div>
+      <div class="field"><label>Gjenta</label>
+        <select id="actRepeat">
+          <option value="none">Ikkje gjenta</option>
+          <option value="daily">Kvar dag</option>
+          <option value="weekly">Kvar veke</option>
+          <option value="monthly">Kvar månad</option>
+          <option value="yearly">Årleg</option>
+        </select>
+      </div>
+      <p class="hint">Gjentakande aktivitetar vert lagt inn eit stykke fram i tid (t.d. eit halvt år for vekentlege) — ikkje for alltid. Du kan leggje inn fleire seinare.</p>
       <button class="btn-save" onclick="saveActivity()">Lagre</button>
       <button class="btn-cancel-s" onclick="closeModal()">Avbryt</button>
     </div>
   </div>`;
+}
+function buildRecurrenceRows({child,date,start,end,title,note,repeat}){
+  const base = { child, start_time:start, end_time:end||start, title, note };
+  if(repeat==='none') return [{...base, date}];
+  const recurrence_id = (crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`);
+  const n = ACTIVITY_REPEAT_COUNT[repeat] || 1;
+  const d0 = new Date(date+'T12:00:00');
+  const rows = [];
+  for(let i=0;i<n;i++){
+    const d = new Date(d0);
+    if(repeat==='daily')   d.setDate(d0.getDate()+i);
+    if(repeat==='weekly')  d.setDate(d0.getDate()+i*7);
+    if(repeat==='monthly') d.setMonth(d0.getMonth()+i);
+    if(repeat==='yearly')  d.setFullYear(d0.getFullYear()+i);
+    rows.push({...base, date: localDateStr(d), recurrence_id, recurrence_rule: repeat});
+  }
+  return rows;
 }
 async function saveActivity(){
   const child = document.getElementById('actChild')?.value;
@@ -835,17 +866,79 @@ async function saveActivity(){
   const end = document.getElementById('actEnd')?.value || null;
   const title = document.getElementById('actTitle')?.value.trim();
   const note = document.getElementById('actNote')?.value.trim() || null;
+  const repeat = document.getElementById('actRepeat')?.value || 'none';
   if(!child || !date || !title){ toast('Fyll ut dato og kva som skal skje'); return; }
   if(start && end && end < start){ toast('Sluttid må vere etter starttid'); return; }
-  await sb('weekly_activities',{method:'POST',headers:HR,body:JSON.stringify({
-    child, date, start_time: start, end_time: end || start, title, note
-  })});
-  closeModal(); toast('Aktivitet lagt til'); renderTab('dinner');
+  const rows = buildRecurrenceRows({child,date,start,end,title,note,repeat});
+  await sb('weekly_activities',{method:'POST',headers:HR,body:JSON.stringify(rows)});
+  closeModal(); toast(rows.length>1?`${rows.length} aktivitetar lagt til`:'Aktivitet lagt til'); renderTab('dinner');
+}
+
+async function openActivityEditModal(id){
+  let a;
+  try { const rows = await sb(`weekly_activities?id=eq.${id}&select=*`); a = rows[0]; } catch(e) {}
+  if(!a){ toast('Fann ikkje aktiviteten'); return; }
+  const canEdit = currentUser.is_admin || (a.child===currentUser.name && !a.source_file);
+  if(!canEdit) return;
+  document.getElementById('modal').innerHTML = `
+  <div class="backdrop" onclick="if(event.target===this)closeModal()">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-title">Endre aktivitet</div>
+      <div class="field"><label>Dato</label><input type="date" id="eaDate" value="${a.date}"></div>
+      <div class="field-row">
+        <div class="field"><label>Frå kl.</label><input type="time" id="eaStart" value="${fmtHM(a.start_time)}"></div>
+        <div class="field"><label>Til kl.</label><input type="time" id="eaEnd" value="${fmtHM(a.end_time)}"></div>
+      </div>
+      <div class="field"><label>Kva skal skje</label><input id="eaTitle" value="${escapeAttr(a.title)}"></div>
+      <div class="field"><label>Notat (valfritt)</label><textarea id="eaNote">${a.note?escapeHtml(a.note):''}</textarea></div>
+      ${a.recurrence_id ? `<p class="hint">Denne aktiviteten er del av ei gjentakande rekkje. Endringar her gjeld berre denne eine dagen.</p>` : ''}
+      <button class="btn-save" onclick="saveActivityEdit('${id}')">Lagre</button>
+      <button class="btn-cancel-s" onclick="closeModal();deleteActivity('${id}')" style="color:var(--pink-deep);border-color:var(--pink)">Slett</button>
+      <button class="btn-cancel-s" onclick="closeModal()">Avbryt</button>
+    </div>
+  </div>`;
+}
+async function saveActivityEdit(id){
+  const date = document.getElementById('eaDate')?.value;
+  const start = document.getElementById('eaStart')?.value || null;
+  const end = document.getElementById('eaEnd')?.value || null;
+  const title = document.getElementById('eaTitle')?.value.trim();
+  const note = document.getElementById('eaNote')?.value.trim() || null;
+  if(!date || !title){ toast('Fyll ut dato og kva som skal skje'); return; }
+  if(start && end && end < start){ toast('Sluttid må vere etter starttid'); return; }
+  await sb(`weekly_activities?id=eq.${id}`,{method:'PATCH',headers:HR,body:JSON.stringify({date,start_time:start,end_time:end||start,title,note})});
+  closeModal(); toast('Aktivitet oppdatert'); renderTab('dinner');
 }
 async function deleteActivity(id){
+  let a;
+  try { const rows = await sb(`weekly_activities?id=eq.${id}&select=recurrence_id`); a = rows[0]; } catch(e) {}
+  if(a && a.recurrence_id){
+    document.getElementById('modal').innerHTML = `
+    <div class="backdrop" onclick="if(event.target===this)closeModal()">
+      <div class="sheet">
+        <div class="sheet-handle"></div>
+        <div class="sheet-title">Slette aktivitet</div>
+        <p class="hint">Denne aktiviteten er del av ei gjentakande rekkje.</p>
+        <button class="btn-save" onclick="confirmDeleteActivity('${id}',false,'${a.recurrence_id}')">Slett berre denne dagen</button>
+        <button class="btn-cancel-s" onclick="confirmDeleteActivity('${id}',true,'${a.recurrence_id}')" style="color:var(--pink-deep);border-color:var(--pink)">Slett heile rekkja</button>
+        <button class="btn-cancel-s" onclick="closeModal()">Avbryt</button>
+      </div>
+    </div>`;
+    return;
+  }
   if(!confirm('Slette denne aktiviteten?')) return;
   await sb(`weekly_activities?id=eq.${id}`,{method:'DELETE',headers:H});
   toast('Aktivitet sletta'); renderTab('dinner');
+}
+async function confirmDeleteActivity(id, wholeSeries, recurrenceId){
+  if(wholeSeries){
+    if(!confirm('Slette heile rekkja med gjentakingar? Dette kan ikkje angrast.')){ closeModal(); return; }
+    await sb(`weekly_activities?recurrence_id=eq.${recurrenceId}`,{method:'DELETE',headers:H});
+  } else {
+    await sb(`weekly_activities?id=eq.${id}`,{method:'DELETE',headers:H});
+  }
+  closeModal(); toast('Sletta'); renderTab('dinner');
 }
 
 let dinnerRecipesCache = [];
