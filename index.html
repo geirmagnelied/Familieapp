@@ -721,7 +721,7 @@ function fmtHM(t){ return t ? t.slice(0,5) : ''; }
 
 let calDayOffset = 0; // 0 = i dag, + = framover, - = bakover
 let calTypeFilter = 'all'; // 'all' | 'middag' | 'dag' | 'ettermiddag'
-let calWhoFilter = new Set(['Tida','Tale','Mari','Geir']);
+let calWhoFilter = new Set(['Tida','Tale','Mari','Geir','Emmi']);
 const CAL_AFTERNOON_CUTOFF = '15:00';
 
 function shiftCalDay(delta){ calDayOffset += delta; renderTab('dinner'); }
