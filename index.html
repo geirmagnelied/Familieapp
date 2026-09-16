@@ -354,7 +354,7 @@ body { font-family:var(--font-b); color:var(--text); overflow:hidden; }
   <button class="fab" id="fab">＋</button>
   <div id="modal"></div>
   <div id="toastEl"></div>
-  <div class="version-badge">v2.2</div>
+  <div class="version-badge">v2.3</div>
 </div>
 
 <script>
@@ -732,12 +732,26 @@ function toggleCalWho(name){
   renderTab('dinner');
 }
 
+const EXTERNAL_CALENDAR_PERSON_KEY = { Geir:'geir', Mari:'mari' };
+async function fetchExternalDayEvents(ds){
+  const wanted = Object.keys(EXTERNAL_CALENDAR_PERSON_KEY).filter(name=>calWhoFilter.has(name));
+  if(!wanted.length) return [];
+  const lists = await Promise.all(wanted.map(async name=>{
+    try{
+      const r = await fetch(`${SUPA_URL}/functions/v1/external-calendar?person=${EXTERNAL_CALENDAR_PERSON_KEY[name]}&date=${ds}`);
+      if(!r.ok) return [];
+      const events = await r.json();
+      return events.map(e=>({ id:null, child:name, start_time:e.start_time, end_time:e.end_time, title:e.title, source_file:'google-calendar', external:true }));
+    }catch(e){ return []; }
+  }));
+  return lists.flat();
+}
 function activityRowHtml(a, showWho){
   const m=members.find(x=>x.name===a.child);
   const color=m?memberColor(m.id):'#999';
-  const canEdit = currentUser.is_admin || (a.child===currentUser.name && !a.source_file);
+  const canEdit = !a.external && (currentUser.is_admin || (a.child===currentUser.name && !a.source_file));
   const time = a.end_time && a.end_time!==a.start_time ? `${fmtHM(a.start_time)}–${fmtHM(a.end_time)}` : fmtHM(a.start_time);
-  return `<div class="activity-row ${canEdit?'editable':''}" ${canEdit?`onclick="openActivityEditModal('${a.id}')"`:''}><span class="activity-dot" style="background:${color}"></span><span class="activity-time">${time}</span><span class="activity-title">${showWho?`<b>${a.child}:</b> `:''}${escapeHtml(a.title)}${a.recurrence_id?' <span class=\"activity-repeat-icon\">↻</span>':''}</span>${canEdit?`<span class="activity-del" onclick="event.stopPropagation();deleteActivity('${a.id}')">✕</span>`:''}</div>`;
+  return `<div class="activity-row ${canEdit?'editable':''}" ${canEdit?`onclick="openActivityEditModal('${a.id}')"`:''}><span class="activity-dot" style="background:${color}"></span><span class="activity-time">${time}</span><span class="activity-title">${showWho?`<b>${a.child}:</b> `:''}${escapeHtml(a.title)}${a.recurrence_id?' <span class=\"activity-repeat-icon\">↻</span>':''}${a.external?' <span class=\"activity-repeat-icon\">· Google Kalender</span>':''}</span>${canEdit?`<span class="activity-del" onclick="event.stopPropagation();deleteActivity('${a.id}')">✕</span>`:''}</div>`;
 }
 
 async function renderDinner(){
@@ -754,7 +768,10 @@ async function renderDinner(){
 
   let acts = [];
   try { acts = await sb(`weekly_activities?date=eq.${ds}&select=*&order=start_time`); } catch(e) {}
+  const externalActs = await fetchExternalDayEvents(ds);
+  acts = acts.concat(externalActs);
   acts = acts.filter(a=>calWhoFilter.has(a.child));
+  acts.sort((a,b)=>(a.start_time||'').localeCompare(b.start_time||''));
   const dayActs = acts.filter(a=> !a.start_time || a.start_time < CAL_AFTERNOON_CUTOFF);
   const eveActs = acts.filter(a=> a.start_time && a.start_time >= CAL_AFTERNOON_CUTOFF);
 
