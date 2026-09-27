@@ -58,7 +58,11 @@ body { font-family:var(--font-b); color:var(--text); overflow:hidden; }
 
 .nav { display:flex; background:var(--card); border-top:1px solid var(--border); flex-shrink:0; z-index:10; box-shadow:0 -1px 6px rgba(0,0,0,0.05); min-height:64px; overflow-x:auto; scrollbar-width:none; }
 .nav::-webkit-scrollbar { display:none; }
-.nav-btn { flex:1 0 auto; min-width:62px; padding:14px 8px 12px; border:none; background:none; font-family:var(--font-b); font-size:10px; font-weight:800; color:var(--muted); cursor:pointer; text-transform:uppercase; letter-spacing:0.3px; position:relative; transition:color 0.15s; line-height:1.3; white-space:nowrap; }
+.nav-btn { flex:1 0 auto; min-width:62px; padding:14px 8px 12px; border:none; background:none; font-family:var(--font-b); font-size:10px; font-weight:800; color:var(--muted); cursor:pointer; text-transform:uppercase; letter-spacing:0.3px; position:relative; transition:color 0.15s; line-height:1.3; white-space:nowrap; text-align:center; }
+.lists-dropup { position:fixed; transform:translate(-50%,-100%); background:var(--card); border:1px solid var(--border); border-radius:12px; box-shadow:0 -4px 16px rgba(0,0,0,0.15); overflow:hidden; min-width:150px; z-index:600; }
+.lists-dropup div { padding:13px 16px; font-family:var(--font-b); font-size:12px; font-weight:700; text-transform:none; letter-spacing:normal; color:var(--charcoal); cursor:pointer; border-bottom:1px solid var(--border); text-align:left; }
+.lists-dropup div:last-child { border-bottom:none; }
+.lists-dropup div:active { background:var(--soft); }
 .nav-btn.active { color:var(--pink-deep); }
 .nav-btn.active::after { content:''; position:absolute; top:0; left:20%; right:20%; height:2px; background:var(--pink-deep); border-radius:0 0 3px 3px; }
 
@@ -135,6 +139,15 @@ body { font-family:var(--font-b); color:var(--text); overflow:hidden; }
 .recipe-pick-row { display:flex; align-items:center; justify-content:space-between; padding:9px 0; border-bottom:1px solid var(--border); cursor:pointer; font-size:13px; font-weight:700; color:var(--charcoal); }
 .recipe-pick-row:last-child { border-bottom:none; }
 .recipe-pick-list { max-height:160px; overflow-y:auto; margin-top:6px; border:1px solid var(--border); border-radius:10px; padding:0 10px; background:var(--soft); }
+.wishlist-row { display:flex; align-items:flex-start; gap:10px; padding:12px 0; border-bottom:1px solid var(--border); }
+.wishlist-row:last-child { border-bottom:none; }
+.wishlist-info { flex:1; min-width:0; }
+.wishlist-title { font-weight:700; font-size:14px; color:var(--charcoal); }
+.wishlist-note { font-size:12px; color:var(--muted); font-weight:600; margin-top:2px; }
+.wishlist-claim { font-size:11px; font-weight:800; color:var(--mint); margin-top:6px; }
+.wishlist-claim.mine { color:var(--pink-deep); }
+.wishlist-unclaim { text-decoration:underline; cursor:pointer; margin-left:6px; }
+.wishlist-claim-btn { margin-top:6px; background:var(--pink-light); color:var(--pink-deep); border:1.5px solid var(--pink); border-radius:14px; font-family:var(--font-b); font-size:11px; font-weight:800; padding:5px 12px; cursor:pointer; }
 .btn-sm { background:var(--pink); color:#fff; border:none; border-radius:10px; font-family:var(--font-b); font-weight:800; font-size:18px; width:40px; cursor:pointer; }
 
 /* Admin */
@@ -348,13 +361,18 @@ body { font-family:var(--font-b); color:var(--text); overflow:hidden; }
     <button class="nav-btn" onclick="switchTab('shopping',this)">Handle</button>
     <button class="nav-btn" onclick="switchTab('chat',this)">Chat</button>
     <button class="nav-btn" onclick="switchTab('chores',this)">Gjeremål</button>
-    <button class="nav-btn" onclick="switchTab('recipes',this)">Oppskrifter</button>
+    <div class="nav-btn" id="listsNavBtn" onclick="toggleListsMenu(event)">Lister
+      <div class="lists-dropup" id="listsDropup" style="display:none">
+        <div onclick="event.stopPropagation();chooseListsTab('recipes')">Oppskrifter</div>
+        <div onclick="event.stopPropagation();chooseListsTab('wishlist')">Ønskelister</div>
+      </div>
+    </div>
   </nav>
 
   <button class="fab" id="fab">＋</button>
   <div id="modal"></div>
   <div id="toastEl"></div>
-  <div class="version-badge">v2.5</div>
+  <div class="version-badge">v2.6</div>
 </div>
 
 <script>
@@ -625,6 +643,32 @@ function switchTab(tab,btn){
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active',b===btn));
   renderTab(tab);
 }
+function toggleListsMenu(e){
+  e.stopPropagation();
+  const el=document.getElementById('listsDropup');
+  const opening = el.style.display==='none' || !el.style.display;
+  if(opening){
+    const btn=document.getElementById('listsNavBtn');
+    const r=btn.getBoundingClientRect();
+    const clampedLeft = Math.min(Math.max(r.left + r.width/2, 80), window.innerWidth-80);
+    el.style.left = Math.round(clampedLeft) + 'px';
+    el.style.top = Math.round(r.top - 8) + 'px';
+  }
+  el.style.display = opening ? 'block' : 'none';
+}
+function chooseListsTab(tab){
+  document.getElementById('listsDropup').style.display='none';
+  currentTab=tab;
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active', b.id==='listsNavBtn'));
+  renderTab(tab);
+}
+document.addEventListener('click', (e)=>{
+  const dropup=document.getElementById('listsDropup');
+  const btn=document.getElementById('listsNavBtn');
+  if(dropup && dropup.style.display!=='none' && !dropup.contains(e.target) && e.target!==btn){
+    dropup.style.display='none';
+  }
+});
 async function renderTab(tab){
   const el=document.getElementById('content');
   el.innerHTML='<div style="padding:32px;text-align:center"><div class="spinner" style="margin:0 auto"></div></div>';
@@ -635,16 +679,18 @@ async function renderTab(tab){
   if(tab==='shopping') el.innerHTML=await renderShopping();
   if(tab==='admin')    el.innerHTML=await renderAdmin();
   if(tab==='recipes')  el.innerHTML=await renderRecipes();
+  if(tab==='wishlist') el.innerHTML=await renderWishlist();
   if(tab==='chat')      { el.innerHTML=await renderChat(); setupChatRealtime(); scrollChatToBottom(); }
   else { teardownChatRealtime(); }
   const fab=document.getElementById('fab');
-  const showFab=(tab==='chores'&&choresTasksFilter!=='chores')||tab==='shopping'||tab==='admin'||tab==='dinner'||tab==='recipes';
+  const showFab=(tab==='chores'&&choresTasksFilter!=='chores')||tab==='shopping'||tab==='admin'||tab==='dinner'||tab==='recipes'||tab==='wishlist';
   fab.style.display=showFab?'flex':'none';
   if(tab==='chores'&&choresTasksFilter!=='chores') fab.onclick=()=>showTaskModal();
   if(tab==='shopping') fab.onclick=()=>showShopModal();
   if(tab==='admin')    fab.onclick=()=>showAdminAddModal();
   if(tab==='dinner')   fab.onclick=()=>showActivityModal();
   if(tab==='recipes')  fab.onclick=()=>showRecipeModal();
+  if(tab==='wishlist') fab.onclick=()=>showWishlistItemModal();
 }
 
 /* ── HOME ── */
@@ -1666,6 +1712,98 @@ async function deleteRecipe(id){
   if(!confirm('Slette denne oppskrifta?')) return;
   await sb(`recipes?id=eq.${id}`,{method:'DELETE',headers:H});
   closeModal(); toast('Oppskrift sletta'); renderTab('recipes');
+}
+
+/* ── WISHLIST ── */
+let wishlistViewOwner = null;
+function setWishlistOwner(id){
+  wishlistViewOwner = id;
+  renderTab('wishlist');
+}
+function wishlistItemRowHtml(item, isOwnList){
+  const canDelete = item.owner_id===currentUser.id || currentUser.is_admin;
+  let claimHtml = '';
+  if(!isOwnList){
+    if(item.claimed_by){
+      const claimer = members.find(m=>m.id===item.claimed_by);
+      const isMe = item.claimed_by===currentUser.id;
+      const canUnclaim = isMe || currentUser.is_admin;
+      claimHtml = `<div class="wishlist-claim ${isMe?'mine':''}">${isMe?'Du har reservert denne':'Reservert av '+(claimer?claimer.name:'nokon')}${canUnclaim?` <span class="wishlist-unclaim" onclick="unclaimWishlistItem('${item.id}')">Angre</span>`:''}</div>`;
+    } else {
+      claimHtml = `<button class="wishlist-claim-btn" onclick="claimWishlistItem('${item.id}')">Eg tek denne</button>`;
+    }
+  }
+  return `<div class="wishlist-row">
+    <div class="wishlist-info">
+      <div class="wishlist-title">${escapeHtml(item.title)}</div>
+      ${item.note?`<div class="wishlist-note">${escapeHtml(item.note)}</div>`:''}
+      ${claimHtml}
+    </div>
+    ${canDelete?`<span class="activity-del" onclick="deleteWishlistItem('${item.id}')">✕</span>`:''}
+  </div>`;
+}
+async function renderWishlist(){
+  if(!wishlistViewOwner) wishlistViewOwner = currentUser.id;
+  let rows = [];
+  try { rows = await sb(`wishlist_items?owner_id=eq.${wishlistViewOwner}&select=*&order=created_at`); } catch(e) {}
+  const isOwnList = wishlistViewOwner === currentUser.id;
+  const owner = members.find(m=>m.id===wishlistViewOwner);
+
+  const chips = members.map(m=>{
+    const on = m.id===wishlistViewOwner;
+    const c = memberColor(m.id);
+    return `<button class="who-chip ${on?'active':''}" style="${on?`background:${c}22;color:${c};border-color:${c}`:''}" onclick="setWishlistOwner('${m.id}')">${m.name}</button>`;
+  }).join('');
+
+  const itemsHtml = rows.length
+    ? rows.map(item=>wishlistItemRowHtml(item, isOwnList)).join('')
+    : `<div style="color:var(--muted);font-size:13px;font-weight:600;padding:8px 0">${isOwnList?'Du har ingen ønske enno':'Ingen ønske enno'}</div>`;
+
+  return `
+  <div class="card">
+    <div class="type-row">${chips}</div>
+  </div>
+  <div class="card">
+    <div class="card-title">${isOwnList?'Mi ønskeliste':(owner?owner.name+' sitt ønske':'Ønskeliste')}</div>
+    ${isOwnList?`<p class="hint">Andre kan sjå og reservere ting herfrå — men du får ikkje sjå kven som har reservert kva, så det held seg ei overrasking!</p>`:''}
+    ${itemsHtml}
+  </div>`;
+}
+function showWishlistItemModal(){
+  const canAdd = currentUser.is_admin || wishlistViewOwner===currentUser.id;
+  if(!canAdd){ toast('Du kan berre leggje til på di eiga liste'); return; }
+  const owner = members.find(m=>m.id===wishlistViewOwner);
+  document.getElementById('modal').innerHTML = `
+  <div class="backdrop" onclick="if(event.target===this)closeModal()">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-title">Nytt ønske${owner?' – '+owner.name:''}</div>
+      <div class="field"><label>Kva ønsker du deg</label><input id="wiTitle" placeholder="t.d. Lego-sett"></div>
+      <div class="field"><label>Notat (valfritt)</label><textarea id="wiNote" placeholder="t.d. Storleik 128, eller lenke"></textarea></div>
+      <button class="btn-save" onclick="saveWishlistItem()">Lagre</button>
+      <button class="btn-cancel-s" onclick="closeModal()">Avbryt</button>
+    </div>
+  </div>`;
+}
+async function saveWishlistItem(){
+  const title = document.getElementById('wiTitle')?.value.trim();
+  const note = document.getElementById('wiNote')?.value.trim() || null;
+  if(!title){ toast('Skriv inn kva du ønsker deg'); return; }
+  await sb('wishlist_items',{method:'POST',headers:HR,body:JSON.stringify({owner_id:wishlistViewOwner,title,note})});
+  closeModal(); toast('Lagt til på ønskelista'); renderTab('wishlist');
+}
+async function deleteWishlistItem(id){
+  if(!confirm('Slette dette ønsket?')) return;
+  await sb(`wishlist_items?id=eq.${id}`,{method:'DELETE',headers:H});
+  toast('Sletta'); renderTab('wishlist');
+}
+async function claimWishlistItem(id){
+  await sb(`wishlist_items?id=eq.${id}`,{method:'PATCH',headers:HR,body:JSON.stringify({claimed_by:currentUser.id})});
+  toast('Du har reservert denne'); renderTab('wishlist');
+}
+async function unclaimWishlistItem(id){
+  await sb(`wishlist_items?id=eq.${id}`,{method:'PATCH',headers:HR,body:JSON.stringify({claimed_by:null})});
+  toast('Reservasjon oppheva'); renderTab('wishlist');
 }
 
 /* ── ADMIN ── */
