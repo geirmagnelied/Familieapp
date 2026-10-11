@@ -389,7 +389,7 @@ body { font-family:var(--font-b); color:var(--text); overflow:hidden; }
   <button class="fab" id="fab">＋</button>
   <div id="modal"></div>
   <div id="toastEl"></div>
-  <div class="version-badge">v2.7</div>
+  <div class="version-badge">v2.8</div>
 </div>
 
 <script>
@@ -782,16 +782,66 @@ function localDateStr(d){
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 function fmtHM(t){ return t ? t.slice(0,5) : ''; }
+const TIME_LIST_START_HOUR = 8; // lista startar kl. 08:00 (mindre skrolling), natta kjem sist
 function timeSelectOptions(selected){
   let html = `<option value="">—</option>`;
   const sel = selected ? selected.slice(0,5) : '';
-  for(let h=0; h<24; h++){
-    for(let m=0; m<60; m+=10){
-      const v = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
-      html += `<option value="${v}" ${v===sel?'selected':''}>${v}</option>`;
-    }
+  let found = !sel;
+  for(let i=0; i<24*4; i++){
+    const h = (TIME_LIST_START_HOUR + Math.floor(i/4)) % 24, m = (i%4)*15;
+    const v = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+    if(v===sel) found = true;
+    html += `<option value="${v}" ${v===sel?'selected':''}>${v}</option>`;
   }
+  // Eksisterande klokkeslett utanfor kvartera (t.d. 08:35 frå skuleplan) må framleis vise att
+  if(!found) html += `<option value="${sel}" selected>${sel}</option>`;
   return html;
+}
+const DURATION_OPTIONS = [15,30,45,60,75,90,105,120,150,180,240,300,360,480];
+function fmtDuration(min){
+  if(min<60) return `${min} min`;
+  const h = Math.floor(min/60), m = min%60;
+  return m ? `${h} t ${m} min` : `${h} t`;
+}
+function durationSelectOptions(selectedMin){
+  let html = `<option value="">—</option>`;
+  DURATION_OPTIONS.forEach(d=>{ html += `<option value="${d}" ${d===selectedMin?'selected':''}>${fmtDuration(d)}</option>`; });
+  return html;
+}
+function hmToMin(t){ const [h,m] = t.split(':').map(Number); return h*60+m; }
+function minToHm(n){ return `${String(Math.floor(n/60)).padStart(2,'0')}:${String(n%60).padStart(2,'0')}`; }
+function timeFieldsHtml(p, start, end, optional){
+  const s = start ? start.slice(0,5) : '', e = end ? end.slice(0,5) : '';
+  const dur = s && e && e>s ? hmToMin(e)-hmToMin(s) : null;
+  const sfx = optional ? ' (valfritt)' : '';
+  return `
+      <div class="field-row">
+        <div class="field"><label>Frå kl.${sfx}</label><select id="${p}Start" onchange="timeSync('${p}','start')">${timeSelectOptions(s)}</select></div>
+        <div class="field"><label>Til kl.${sfx}</label><select id="${p}End" onchange="timeSync('${p}','end')">${timeSelectOptions(e)}</select></div>
+      </div>
+      <div class="field"><label>Varigheit (valfritt)</label><select id="${p}Dur" onchange="timeSync('${p}','dur')">${durationSelectOptions(dur)}</select></div>`;
+}
+// Held Frå/Til/Varigheit i synk: start+varigheit gir sluttid, og sluttid gir varigheit.
+function timeSync(p, changed){
+  const sEl = document.getElementById(p+'Start'), eEl = document.getElementById(p+'End'), dEl = document.getElementById(p+'Dur');
+  if(!sEl || !eEl || !dEl) return;
+  const dur = dEl.value ? Number(dEl.value) : null;
+  if(changed==='end'){
+    const ok = sEl.value && eEl.value && eEl.value>sEl.value && DURATION_OPTIONS.includes(hmToMin(eEl.value)-hmToMin(sEl.value));
+    dEl.value = ok ? String(hmToMin(eEl.value)-hmToMin(sEl.value)) : '';
+    return;
+  }
+  if(changed==='start' && !dur){
+    // Ingen varigheit vald: flytt ikkje sluttid, men nullstill ugyldig sluttid
+    if(sEl.value && eEl.value && eEl.value<=sEl.value) eEl.value='';
+    return;
+  }
+  if(!dur || !sEl.value) return;
+  const endMin = Math.min(hmToMin(sEl.value)+dur, 23*60+45); // held seg innanfor same dag
+  const v = minToHm(endMin);
+  if(![...eEl.options].some(o=>o.value===v)) eEl.add(new Option(v,v));
+  eEl.value = v;
+  if(hmToMin(sEl.value)+dur > 23*60+45) dEl.value='';
 }
 
 let calDayOffset = 0; // 0 = i dag, + = framover, - = bakover
@@ -1002,10 +1052,7 @@ function showActivityModal(){
         <div class="field"><label>Frå dato</label><input type="date" id="actDate" value="${shownDate}" onchange="onActRepeatChange()"></div>
         <div class="field"><label>Til dato</label><input type="date" id="actEndDate" value="${shownDate}"></div>
       </div>
-      <div class="field-row">
-        <div class="field"><label>Frå kl. (valfritt)</label><select id="actStart">${timeSelectOptions('')}</select></div>
-        <div class="field"><label>Til kl. (valfritt)</label><select id="actEnd">${timeSelectOptions('')}</select></div>
-      </div>
+      ${timeFieldsHtml('act','','',true)}
       <div class="field"><label>Kva skal skje</label><input id="actTitle" placeholder="t.d. Fotballtrening"></div>
       <div class="field"><label>Notat (valfritt)</label><textarea id="actNote" placeholder="t.d. Hugs leggskinn"></textarea></div>
       <div class="field"><label>Gjenta</label>
@@ -1099,10 +1146,7 @@ async function openActivityEditModal(id){
         <div class="field"><label>Frå dato</label><input type="date" id="eaDate" value="${a.date}"></div>
         <div class="field"><label>Til dato</label><input type="date" id="eaEndDate" value="${a.end_date||a.date}"></div>
       </div>
-      <div class="field-row">
-        <div class="field"><label>Frå kl.</label><select id="eaStart">${timeSelectOptions(a.start_time)}</select></div>
-        <div class="field"><label>Til kl.</label><select id="eaEnd">${timeSelectOptions(a.end_time)}</select></div>
-      </div>
+      ${timeFieldsHtml('ea',a.start_time,a.end_time,false)}
       <div class="field"><label>Kva skal skje</label><input id="eaTitle" value="${escapeAttr(a.title)}"></div>
       <div class="field"><label>Notat (valfritt)</label><textarea id="eaNote">${a.note?escapeHtml(a.note):''}</textarea></div>
       ${a.recurrence_id ? `<p class="hint">Denne aktiviteten er del av ei gjentakande rekkje. Endringar her gjeld berre denne eine dagen.</p>` : ''}
