@@ -59,6 +59,7 @@ body { font-family:var(--font-b); color:var(--text); overflow:hidden; }
 .nav { display:flex; background:var(--card); border-top:1px solid var(--border); flex-shrink:0; z-index:10; box-shadow:0 -1px 6px rgba(0,0,0,0.05); min-height:64px; overflow-x:auto; scrollbar-width:none; }
 .nav::-webkit-scrollbar { display:none; }
 .nav-btn { flex:1 0 auto; min-width:62px; padding:14px 8px 12px; border:none; background:none; font-family:var(--font-b); font-size:10px; font-weight:800; color:var(--muted); cursor:pointer; text-transform:uppercase; letter-spacing:0.3px; position:relative; transition:color 0.15s; line-height:1.3; white-space:nowrap; text-align:center; }
+#listsNavBtn { display:flex; align-items:center; justify-content:center; }
 .lists-dropup { position:fixed; transform:translate(-50%,-100%); background:var(--card); border:1px solid var(--border); border-radius:12px; box-shadow:0 -4px 16px rgba(0,0,0,0.15); overflow:hidden; min-width:150px; z-index:600; }
 .lists-dropup div { padding:13px 16px; font-family:var(--font-b); font-size:12px; font-weight:700; text-transform:none; letter-spacing:normal; color:var(--charcoal); cursor:pointer; border-bottom:1px solid var(--border); text-align:left; }
 .lists-dropup div:last-child { border-bottom:none; }
@@ -147,6 +148,21 @@ body { font-family:var(--font-b); color:var(--text); overflow:hidden; }
 .wishlist-claim { font-size:11px; font-weight:800; color:var(--mint); margin-top:6px; }
 .wishlist-claim.mine { color:var(--pink-deep); }
 .wishlist-unclaim { text-decoration:underline; cursor:pointer; margin-left:6px; }
+.dice-row { display:flex; gap:8px; margin-bottom:14px; }
+.dice-btn { flex:1; padding:12px 0; border-radius:12px; border:2px solid var(--border); background:var(--soft); font-family:var(--font-h); font-size:18px; font-weight:800; color:var(--muted); cursor:pointer; transition:all 0.15s; }
+.dice-btn.active { background:var(--pink-light); color:var(--pink-deep); border-color:var(--pink); }
+.df-label { font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:0.5px; color:var(--muted); margin:2px 0 8px; }
+.df-member { padding:12px 0; border-bottom:1px solid var(--border); }
+.df-member:last-child { border-bottom:none; }
+.df-member-head { display:flex; align-items:center; gap:8px; font-weight:800; font-size:14px; color:var(--charcoal); }
+.df-dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; }
+.df-rating { margin-left:auto; font-size:11px; font-weight:800; padding:3px 10px; border-radius:20px; }
+.df-flags { display:flex; flex-wrap:wrap; gap:5px; margin-top:7px; }
+.df-flag { font-size:11px; font-weight:700; padding:3px 9px; border-radius:20px; background:var(--soft); color:var(--charcoal); border:1px solid var(--border); }
+.df-note { font-size:13px; font-weight:600; color:var(--charcoal); margin-top:7px; line-height:1.45; white-space:pre-wrap; }
+.df-empty { font-size:12px; font-weight:600; color:var(--muted); margin-top:4px; }
+.df-edit-link { font-size:12px; font-weight:800; color:var(--pink); cursor:pointer; margin-left:8px; text-decoration:underline; }
+.bday-name { font-weight:800; }
 .wishlist-claim-btn { margin-top:6px; background:var(--pink-light); color:var(--pink-deep); border:1.5px solid var(--pink); border-radius:14px; font-family:var(--font-b); font-size:11px; font-weight:800; padding:5px 12px; cursor:pointer; }
 .btn-sm { background:var(--pink); color:#fff; border:none; border-radius:10px; font-family:var(--font-b); font-weight:800; font-size:18px; width:40px; cursor:pointer; }
 
@@ -361,10 +377,11 @@ body { font-family:var(--font-b); color:var(--text); overflow:hidden; }
     <button class="nav-btn" onclick="switchTab('shopping',this)">Handle</button>
     <button class="nav-btn" onclick="switchTab('chat',this)">Chat</button>
     <button class="nav-btn" onclick="switchTab('chores',this)">Gjeremål</button>
-    <div class="nav-btn" id="listsNavBtn" onclick="toggleListsMenu(event)">Lister
+    <div class="nav-btn" id="listsNavBtn" onclick="toggleListsMenu(event)">Notater
       <div class="lists-dropup" id="listsDropup" style="display:none">
         <div onclick="event.stopPropagation();chooseListsTab('recipes')">Oppskrifter</div>
         <div onclick="event.stopPropagation();chooseListsTab('wishlist')">Ønskelister</div>
+        <div onclick="event.stopPropagation();chooseListsTab('dagsform')">Dagsform</div>
       </div>
     </div>
   </nav>
@@ -372,7 +389,7 @@ body { font-family:var(--font-b); color:var(--text); overflow:hidden; }
   <button class="fab" id="fab">＋</button>
   <div id="modal"></div>
   <div id="toastEl"></div>
-  <div class="version-badge">v2.6</div>
+  <div class="version-badge">v2.7</div>
 </div>
 
 <script>
@@ -680,7 +697,8 @@ async function renderTab(tab){
   if(tab==='admin')    el.innerHTML=await renderAdmin();
   if(tab==='recipes')  el.innerHTML=await renderRecipes();
   if(tab==='wishlist') el.innerHTML=await renderWishlist();
-  if(tab==='chat')      { el.innerHTML=await renderChat(); setupChatRealtime(); scrollChatToBottom(); }
+  if(tab==='dagsform') el.innerHTML=await renderDagsform();
+  if(tab==='chat')     { el.innerHTML=await renderChat(); setupChatRealtime(); scrollChatToBottom(); }
   else { teardownChatRealtime(); }
   const fab=document.getElementById('fab');
   const showFab=(tab==='chores'&&choresTasksFilter!=='chores')||tab==='shopping'||tab==='admin'||tab==='dinner'||tab==='recipes'||tab==='wishlist';
@@ -835,6 +853,9 @@ async function renderDinner(){
   const dayActs = acts.filter(a=> !a.start_time || a.start_time < CAL_AFTERNOON_CUTOFF);
   const eveActs = acts.filter(a=> a.start_time && a.start_time >= CAL_AFTERNOON_CUTOFF);
 
+  const bdays = calTypeFilter==='all' ? await fetchBirthdaysFor(d) : [];
+  const bdayHtml = bdays.length ? `<div class="card"><div class="card-title">Bursdag</div>${bdays.map(b=>birthdayRowHtml(b,d)).join('')}</div>` : '';
+
   const showMiddag = calTypeFilter==='all' || calTypeFilter==='middag';
   const showDag = calTypeFilter==='all' || calTypeFilter==='dag';
   const showEtterm = calTypeFilter==='all' || calTypeFilter==='ettermiddag';
@@ -880,8 +901,85 @@ async function renderDinner(){
       }).join('')}
     </div>
   </div>
+  ${bdayHtml}
   ${middagHtml}
   ${actHtml}`;
+}
+
+/* ── BURSDAGAR (gjentek seg årleg på same dato) ── */
+const MONTHS_NO=['januar','februar','mars','april','mai','juni','juli','august','september','oktober','november','desember'];
+const MONTH_MAX_DAYS=[31,29,31,30,31,30,31,31,30,31,30,31];
+function isLeapYear(y){ return (y%4===0 && y%100!==0) || y%400===0; }
+async function fetchBirthdaysFor(d){
+  const m=d.getMonth()+1, day=d.getDate();
+  let rows=[];
+  try{
+    rows = await sb(`birthdays?month=eq.${m}&day=eq.${day}&select=*`);
+    if(m===2 && day===28 && !isLeapYear(d.getFullYear())) rows = rows.concat(await sb(`birthdays?month=eq.2&day=eq.29&select=*`));
+  }catch(e){}
+  return rows;
+}
+function birthdayRowHtml(b, d){
+  const age = b.birth_year ? d.getFullYear()-b.birth_year : null;
+  const past = localDateStr(d) < localDateStr(new Date());
+  const text = (age!==null && age>0) ? `${past?'fylte':'fyller'} ${age} år` : 'har bursdag';
+  const canDelete = currentUser.is_admin || b.created_by===currentUser.id;
+  return `<div class="activity-row"><span class="activity-title"><span class="bday-name">${escapeHtml(b.name)}</span> ${text}</span>${canDelete?`<span class="activity-del" onclick="deleteBirthday('${b.id}')">✕</span>`:''}</div>`;
+}
+function activityModalTabs(active){
+  return `<div class="type-row" style="margin-bottom:14px">
+    <button class="type-chip ${active==='act'?'active':''}" onclick="showActivityModal()">Aktivitet</button>
+    <button class="type-chip ${active==='bday'?'active':''}" onclick="showBirthdayModal()">Bursdag</button>
+  </div>`;
+}
+async function showBirthdayModal(){
+  const d = new Date(); d.setDate(d.getDate()+calDayOffset);
+  let all=[];
+  try{ all = await sb('birthdays?select=*&order=month,day'); }catch(e){}
+  const dayOpts = Array.from({length:31},(_,i)=>`<option value="${i+1}" ${i+1===d.getDate()?'selected':''}>${i+1}.</option>`).join('');
+  const monthOpts = MONTHS_NO.map((n,i)=>`<option value="${i+1}" ${i===d.getMonth()?'selected':''}>${n}</option>`).join('');
+  const listHtml = all.length ? all.map(b=>{
+    const canDelete = currentUser.is_admin || b.created_by===currentUser.id;
+    return `<div class="activity-row"><span class="activity-title"><span class="bday-name">${escapeHtml(b.name)}</span> — ${b.day}. ${MONTHS_NO[b.month-1]}${b.birth_year?` (f. ${b.birth_year})`:''}</span>${canDelete?`<span class="activity-del" onclick="deleteBirthday('${b.id}',true)">✕</span>`:''}</div>`;
+  }).join('') : `<div class="cal-empty">Ingen bursdagar registrerte enno</div>`;
+  document.getElementById('modal').innerHTML = `
+  <div class="backdrop" onclick="if(event.target===this)closeModal()">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-title">Ny bursdag</div>
+      ${activityModalTabs('bday')}
+      <div class="field"><label>Namn</label><input id="bdName" placeholder="t.d. Bestemor"></div>
+      <div class="field-row">
+        <div class="field"><label>Dag</label><select id="bdDay">${dayOpts}</select></div>
+        <div class="field"><label>Månad</label><select id="bdMonth">${monthOpts}</select></div>
+      </div>
+      <div class="field"><label>Fødselsår (valfritt)</label><input id="bdYear" type="number" inputmode="numeric" min="1900" max="${new Date().getFullYear()}" placeholder="t.d. 2014 — for å vise alder"></div>
+      <p class="hint">Bursdagen kjem att på same dato kvart år, for alltid.</p>
+      <button class="btn-save" onclick="saveBirthday()">Lagre bursdag</button>
+      <div class="df-label" style="margin-top:18px">Registrerte bursdagar</div>
+      ${listHtml}
+      <button class="btn-cancel-s" onclick="closeModal()">Lukk</button>
+    </div>
+  </div>`;
+}
+async function saveBirthday(){
+  const name = document.getElementById('bdName')?.value.trim();
+  const day = Number(document.getElementById('bdDay')?.value);
+  const month = Number(document.getElementById('bdMonth')?.value);
+  const yRaw = document.getElementById('bdYear')?.value.trim();
+  const birth_year = yRaw ? Number(yRaw) : null;
+  if(!name){ toast('Skriv inn namn'); return; }
+  if(day > MONTH_MAX_DAYS[month-1]){ toast(`${MONTHS_NO[month-1]} har ikkje ${day} dagar`); return; }
+  if(birth_year!==null && (birth_year<1900 || birth_year>new Date().getFullYear())){ toast('Ugyldig fødselsår'); return; }
+  await sb('birthdays',{method:'POST',headers:HR,body:JSON.stringify({name,month,day,birth_year,created_by:currentUser.id})});
+  closeModal(); toast('Bursdag lagt til'); renderTab('dinner');
+}
+async function deleteBirthday(id, fromModal){
+  if(!confirm('Slette denne bursdagen?')) return;
+  await sb(`birthdays?id=eq.${id}`,{method:'DELETE',headers:H});
+  toast('Bursdag sletta');
+  renderTab('dinner');
+  if(fromModal) showBirthdayModal();
 }
 
 const ACTIVITY_REPEAT_DEFAULT_MONTHS = { daily:2, weekly:6, monthly:12, yearly:60 };
@@ -895,6 +993,7 @@ function showActivityModal(){
     <div class="sheet">
       <div class="sheet-handle"></div>
       <div class="sheet-title">Ny aktivitet</div>
+      ${activityModalTabs('act')}
       ${isAdmin ? `
       <div class="field"><label>Kven gjeld det</label>
         <select id="actChild">${members.map(m=>`<option value="${escapeAttr(m.name)}" ${m.name===currentUser.name?'selected':''}>${m.name}</option>`).join('')}</select>
@@ -1804,6 +1903,107 @@ async function claimWishlistItem(id){
 async function unclaimWishlistItem(id){
   await sb(`wishlist_items?id=eq.${id}`,{method:'PATCH',headers:HR,body:JSON.stringify({claimed_by:null})});
   toast('Reservasjon oppheva'); renderTab('wishlist');
+}
+
+/* ── DAGSFORM (ope for alle å sjå, lagra per person per dag) ── */
+const DAGSFORM_FLAGS = ['Sjuk','Pjusk','Mannesjuk','Magetrøbbel','Vondt i kroppen','Muskelverk','Vondt i ledd'];
+const DAGSFORM_RATING_COLORS = ['','#D4607E','#E8854B','#E8B84B','#A9BE4A','#6DBF99','#3FA878'];
+let dagsformDate = null;
+let dagsformEditId = null;
+
+function dfToday(){ return localDateStr(new Date()); }
+function dfShiftDay(delta){
+  const d = new Date(dagsformDate+'T12:00:00'); d.setDate(d.getDate()+delta);
+  const s = localDateStr(d);
+  if(s > dfToday()) return;
+  dagsformDate = s; dagsformEditId = currentUser.id; renderTab('dagsform');
+}
+function dfSetDate(v){
+  if(!v) return;
+  dagsformDate = v > dfToday() ? dfToday() : v;
+  dagsformEditId = currentUser.id;
+  renderTab('dagsform');
+}
+function dfEditMember(id){ dagsformEditId = id; renderTab('dagsform'); }
+function dfPickRating(btn){
+  const was = btn.classList.contains('active');
+  btn.parentElement.querySelectorAll('.dice-btn').forEach(b=>b.classList.remove('active'));
+  if(!was) btn.classList.add('active');
+}
+function dfToggleFlag(btn){ btn.classList.toggle('active'); }
+
+async function saveDagsform(){
+  const memberId = dagsformEditId, date = dagsformDate;
+  const rb = document.querySelector('#dfRating .dice-btn.active');
+  const rating = rb ? Number(rb.dataset.v) : null;
+  const flags = Array.from(document.querySelectorAll('#dfFlags .type-chip.active')).map(b=>b.dataset.flag);
+  const note = document.getElementById('dfNote')?.value.trim() || null;
+  if(!rating && !flags.length && !note){
+    await sb(`daily_form?member_id=eq.${memberId}&date=eq.${date}`,{method:'DELETE',headers:H});
+    toast('Dagsform fjerna');
+  } else {
+    await sb('daily_form?on_conflict=member_id,date',{
+      method:'POST',
+      headers:{...HR,'Prefer':'return=representation,resolution=merge-duplicates'},
+      body:JSON.stringify({member_id:memberId,date,rating,flags,note,updated_at:new Date().toISOString()})
+    });
+    toast('Dagsform lagra');
+  }
+  dagsformEditId = currentUser.id;
+  renderTab('dagsform');
+}
+
+function dfSummaryHtml(m, row){
+  const c = memberColor(m.id);
+  const canEditThis = m.id===currentUser.id || currentUser.is_admin;
+  const rc = row && row.rating ? DAGSFORM_RATING_COLORS[row.rating] : null;
+  return `<div class="df-member">
+    <div class="df-member-head"><span class="df-dot" style="background:${c}"></span>${m.name}${canEditThis?`<span class="df-edit-link" onclick="dfEditMember('${m.id}')">${row?'Endre':'Registrer'}</span>`:''}${rc?`<span class="df-rating" style="background:${rc}22;border:1.5px solid ${rc};color:var(--charcoal)">Terningkast ${row.rating}</span>`:''}</div>
+    ${row && row.flags && row.flags.length ? `<div class="df-flags">${row.flags.map(f=>`<span class="df-flag">${escapeHtml(f)}</span>`).join('')}</div>` : ''}
+    ${row && row.note ? `<div class="df-note">${escapeHtml(row.note)}</div>` : ''}
+    ${!row ? `<div class="df-empty">Ikkje registrert</div>` : ''}
+  </div>`;
+}
+
+async function renderDagsform(){
+  if(!dagsformDate) dagsformDate = dfToday();
+  if(!dagsformEditId) dagsformEditId = currentUser.id;
+  let rows = [];
+  try { rows = await sb(`daily_form?date=eq.${dagsformDate}&select=*`); } catch(e) {}
+  const byMember = {}; rows.forEach(r=>{ byMember[r.member_id]=r; });
+
+  let editMember = members.find(m=>m.id===dagsformEditId) || currentUser;
+  if(editMember.id!==currentUser.id && !currentUser.is_admin) editMember = currentUser;
+  const cur = byMember[editMember.id] || null;
+  const flagsOn = new Set(cur && cur.flags ? cur.flags : []);
+  const isToday = dagsformDate === dfToday();
+  const weekday = new Date(dagsformDate+'T12:00:00').toLocaleDateString('no',{weekday:'long'});
+  const dayCaption = isToday ? 'I dag' : weekday;
+
+  const others = members.filter(m=>m.id!==editMember.id);
+
+  return `
+  <div class="card">
+    <div class="dinner-week-nav" style="margin-bottom:6px">
+      <button class="date-arrow" onclick="dfShiftDay(-1)">‹</button>
+      <input type="date" class="search-input" style="flex:1;text-align:center;font-weight:700" value="${dagsformDate}" max="${dfToday()}" onchange="dfSetDate(this.value)">
+      <button class="date-arrow" onclick="dfShiftDay(1)" ${isToday?'disabled':''}>›</button>
+    </div>
+    <div class="df-label" style="text-align:center;margin:4px 0 0;text-transform:capitalize">${dayCaption}</div>
+  </div>
+  <div class="card">
+    <div class="card-title">${editMember.id===currentUser.id?'Min dagsform':'Dagsform for '+editMember.name}</div>
+    <div class="df-label">Dagsform (terningkast 1–6, 6 er best)</div>
+    <div class="dice-row" id="dfRating">${[1,2,3,4,5,6].map(n=>`<button class="dice-btn ${cur&&cur.rating===n?'active':''}" data-v="${n}" onclick="dfPickRating(this)">${n}</button>`).join('')}</div>
+    <div class="df-label">Kva plagar deg?</div>
+    <div class="type-row" id="dfFlags" style="margin-bottom:14px">${DAGSFORM_FLAGS.map(f=>`<button class="type-chip ${flagsOn.has(f)?'active':''}" data-flag="${escapeAttr(f)}" onclick="dfToggleFlag(this)">${f}</button>`).join('')}</div>
+    <div class="field"><label>Kort om dagsforma</label><textarea id="dfNote" placeholder="t.d. Litt trøytt etter trening, men ellers fin">${cur&&cur.note?escapeHtml(cur.note):''}</textarea></div>
+    <button class="btn-save" onclick="saveDagsform()">Lagre</button>
+  </div>
+  <div class="card">
+    <div class="card-title">Resten av familien</div>
+    ${others.map(m=>dfSummaryHtml(m, byMember[m.id]||null)).join('')}
+  </div>`;
 }
 
 /* ── ADMIN ── */
