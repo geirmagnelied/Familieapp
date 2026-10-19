@@ -389,7 +389,7 @@ body { font-family:var(--font-b); color:var(--text); overflow:hidden; }
   <button class="fab" id="fab">＋</button>
   <div id="modal"></div>
   <div id="toastEl"></div>
-  <div class="version-badge">v2.8</div>
+  <div class="version-badge">v2.9</div>
 </div>
 
 <script>
@@ -917,12 +917,16 @@ async function renderDinner(){
         <div class="today-label">Middag</div>
         <div class="today-meal ${hasPlan && dRec.meal ? '' : 'empty'}">${hasPlan && dRec.meal ? escapeHtml(dRec.meal) : 'Ingen middag planlagt'}</div>
         ${cook ? `<div class="today-cook">${cook.name} lagar</div>` : ''}
-        ${dRec && dRec.notes ? `<div class="today-notes">${escapeHtml(dRec.notes)}</div>` : ''}
+        ${dRec && dRec.notes ? (/^https:\/\/\S+$/.test(dRec.notes.trim())
+          ? `<div class="today-notes"><a href="${escapeAttr(dRec.notes.trim())}" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline">Sjå oppskrift</a></div>`
+          : `<div class="today-notes">${escapeHtml(dRec.notes)}</div>`) : ''}
         ${dRec && dRec.recipe_id ? `<div class="today-cook" style="cursor:pointer;text-decoration:underline" onclick="openRecipeDetail('${dRec.recipe_id}')">Sjå oppskrift</div>` : ''}
       </div>
       <button class="today-action" onclick="openDinnerModal('${ds}')">${hasPlan?'Endre':'Planlegg'}</button>
     </div>
   </div>`;
+
+  const suggHtml = showMiddag ? await fetchDinnerSuggestionsHtml() : '';
 
   const actHtml = (!showDag && !showEtterm) ? '' : `
   <div class="card">
@@ -953,7 +957,74 @@ async function renderDinner(){
   </div>
   ${bdayHtml}
   ${middagHtml}
+  ${suggHtml}
   ${actHtml}`;
+}
+
+/* ── MIDDAGSFORSLAG (fylt ut kvar fredag av ein planlagd Claude-jobb frå matprat.no) ── */
+const SUGGESTION_KIND_LABEL = { vegetar:'Vegetar', fisk:'Fisk' };
+let dinnerSuggestions = [];
+function mondayOfStr(d){
+  const x = new Date(d); x.setHours(12,0,0,0);
+  x.setDate(x.getDate() - ((x.getDay()+6)%7));
+  return localDateStr(x);
+}
+async function fetchDinnerSuggestionsHtml(){
+  let rows = [];
+  try { rows = await sb(`dinner_suggestions?week_start=gte.${mondayOfStr(new Date())}&select=*&order=week_start.desc,created_at.asc`); } catch(e) {}
+  if(!rows.length){ dinnerSuggestions = []; return ''; }
+  const wk = rows[0].week_start;
+  dinnerSuggestions = rows.filter(r=>r.week_start===wk);
+  const wd = new Date(wk+'T12:00:00');
+  const rowsHtml = dinnerSuggestions.map(r=>{
+    const safeUrl = /^https:\/\//.test(r.url) ? r.url : '#';
+    const meta = [SUGGESTION_KIND_LABEL[r.kind]||r.kind, r.info].filter(Boolean).join(' · ');
+    return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--border,#eee)">
+      <div style="flex:1;min-width:0">
+        <a href="${escapeAttr(safeUrl)}" target="_blank" rel="noopener" style="font-weight:800;color:var(--charcoal);text-decoration:underline">${escapeHtml(r.title)}</a>
+        <div style="font-size:12px;color:var(--muted);font-weight:600;margin-top:2px">${escapeHtml(meta)}</div>
+      </div>
+      <button class="today-action" onclick="pickSuggestion('${r.id}')">Bruk</button>
+    </div>`;
+  }).join('');
+  return `<div class="card"><div class="card-title">Middagsforslag · veke frå ${wd.getDate()}. ${MONTHS_NO[wd.getMonth()]}</div>${rowsHtml}</div>`;
+}
+function pickSuggestion(id){
+  const s = dinnerSuggestions.find(x=>x.id===id);
+  if(!s) return;
+  const DOWFULL=['måndag','tysdag','onsdag','torsdag','fredag','laurdag','søndag'];
+  const wd = new Date(s.week_start+'T12:00:00');
+  const opts = DOWFULL.map((n,i)=>{
+    const d = new Date(wd); d.setDate(wd.getDate()+i);
+    return `<option value="${localDateStr(d)}">${n} ${d.getDate()}.${d.getMonth()+1}</option>`;
+  }).join('');
+  document.getElementById('modal').innerHTML = `
+  <div class="backdrop" onclick="if(event.target===this)closeModal()">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-title">${escapeHtml(s.title)}</div>
+      <div class="field"><label>Kva dag skal vi ete dette</label><select id="sgDay">${opts}</select></div>
+      <button class="btn-save" onclick="saveSuggestionDay('${id}')">Legg til middagskalenderen</button>
+      <button class="btn-cancel-s" onclick="closeModal()">Avbryt</button>
+    </div>
+  </div>`;
+}
+async function saveSuggestionDay(id){
+  const s = dinnerSuggestions.find(x=>x.id===id);
+  const ds = document.getElementById('sgDay')?.value;
+  if(!s || !ds) return;
+  let rec = null;
+  try { rec = (await sb(`dinners?date=eq.${ds}&select=*`))[0] || null; } catch(e) {}
+  if(rec && rec.cook_id && rec.cook_id!==currentUser.id && !currentUser.is_admin){ toast('Nokon andre har meldt seg på den dagen'); return; }
+  if(rec && rec.meal && !confirm('Erstatte «'+rec.meal+'»?')) return;
+  try {
+    await sb('dinners?on_conflict=date', {
+      method:'POST',
+      headers:{...HR, 'Prefer':'return=representation,resolution=merge-duplicates'},
+      body: JSON.stringify({ date: ds, meal: s.title, notes: s.url, recipe_id: null, created_by: currentUser.id })
+    });
+    closeModal(); toast('Middag lagt til'); renderTab('dinner');
+  } catch(e) { toast('Kunne ikkje lagre'); }
 }
 
 /* ── BURSDAGAR (gjentek seg årleg på same dato) ── */
