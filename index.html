@@ -7,17 +7,18 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>FamilieApp</title>
+<script>(function(){var n=new Date(),m=n.getMonth(),d=n.getDate();if(m===9||(m===10&&d<=2))document.documentElement.classList.add("halloween");})();</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;700;800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-html, body { height: 100%; overscroll-behavior: none; background: #F2ECEE; }
+html, body { height: 100%; overscroll-behavior: none; background: #FFF4E6; }
 :root {
-  --bg:#F2ECEE; --surface:#FAF7F8; --card:#FFFFFF; --border:#E3D8DC;
-  --text:#2A2025; --muted:#9B8A90; --soft:#F5EEF1;
-  --pink:#D4607E; --pink-light:#FADADF; --pink-deep:#B8445F; --rose:#EAA0B0;
-  --grey:#7A7078; --charcoal:#3A2E32; --mint:#6DBF99; --gold:#E8B84B;
-  --radius:16px; --shadow:0 2px 12px rgba(160,80,100,0.08);
+  --bg:#FFF4E6; --surface:#FFF9F2; --card:#FFFFFF; --border:rgba(124,58,237,0.10); --line:#D9C8F5; --purple:#7C3AED;
+  --text:#2B1B3D; --muted:#8A7B9C; --soft:#F6F0FF;
+  --pink:#FF7A18; --pink-light:#FFE3C7; --pink-deep:#E8590C; --rose:#FFB26B;
+  --grey:#7A6D8C; --charcoal:#2B1B3D; --mint:#2FBF8A; --gold:#FFC233;
+  --radius:16px; --shadow:0 4px 18px rgba(91,33,182,0.09);
   --font-h:'Baloo 2',sans-serif; --font-b:'Nunito',sans-serif;
 }
 body { font-family:var(--font-b); color:var(--text); overflow:hidden; }
@@ -284,7 +285,8 @@ body { font-family:var(--font-b); color:var(--text); overflow:hidden; }
 .sugg-track { display:flex; gap:10px; overflow-x:auto; scroll-snap-type:x mandatory; scrollbar-width:none; -webkit-overflow-scrolling:touch; }
 .sugg-track::-webkit-scrollbar { display:none; }
 .sugg-card { flex:0 0 100%; scroll-snap-align:start; box-sizing:border-box; display:flex; align-items:center; gap:10px; background:rgba(255,255,255,0.8); border-radius:12px; padding:10px 12px; }
-.sugg-title { font-weight:800; font-size:14px; color:var(--charcoal); text-decoration:underline; }
+.sugg-thumb { width:52px; height:52px; border-radius:10px; object-fit:cover; flex-shrink:0; }
+.sugg-title { cursor:pointer; font-weight:800; font-size:14px; color:var(--charcoal); text-decoration:underline; }
 .sugg-meta { font-size:12px; color:var(--muted); font-weight:600; margin-top:2px; }
 .sugg-dots { display:flex; justify-content:center; gap:6px; margin-top:8px; }
 .sugg-dot { width:7px; height:7px; border-radius:50%; background:var(--rose); opacity:0.5; }
@@ -364,6 +366,52 @@ body { font-family:var(--font-b); color:var(--text); overflow:hidden; }
 .stats-total-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
 .stats-total-name { flex:1; font-size:13px; font-weight:700; color:var(--charcoal); }
 .stats-total-num { font-family:var(--font-h); font-size:16px; font-weight:800; color:var(--charcoal); }
+
+/* ── TEMA v3: livlegare fargar (oransje + lilla), ingen rammer, halloween-motiv i sesongen ── */
+.card, .sheet, .ob-btn, .pin-key, .nav, .lists-dropup, .locked-box, .idea-card, .today-card,
+.field input, .field select, .field textarea, .add-input, .search-input, .min-input, .chat-input,
+.date-bar-btn, .date-arrow, .stats-period-btn, .btn-cancel-s, .type-chip, .who-chip, .dice-btn,
+.ideas-close, .score-mini-btn, .user-chip, .hamburger-btn, .pill-grey, .pill-gold, .df-flag,
+.recurring-badge, .wishlist-claim-btn, .btn-del, .chat-bubble, .recipe-pick-list, .btn-log.done { border-color:transparent !important; }
+.field input:focus, .field select:focus, .field textarea:focus, .add-input:focus, .search-input:focus,
+.min-input:focus, .chat-input:focus { border-color:var(--pink) !important; box-shadow:0 0 0 3px rgba(255,122,24,0.18); }
+.nav { border-top:none; box-shadow:0 -4px 18px rgba(91,33,182,0.10); }
+.card { box-shadow:0 4px 18px rgba(91,33,182,0.09); }
+.type-chip, .who-chip, .dice-btn, .stats-period-btn, .date-arrow, .date-bar-btn { background:#F1E9FF; color:#6B5A86; }
+.type-chip.active, .dice-btn.active { background:var(--pink); color:#fff; }
+.btn-cancel-s { background:#F1E9FF; color:#6B5A86; }
+.header { background:linear-gradient(120deg,#4C1D95 0%,#7C3AED 50%,#FF7A18 100%); box-shadow:0 4px 18px rgba(91,33,182,0.30); position:relative; overflow:hidden; }
+.today-card { background:linear-gradient(135deg,#FFE9D2 0%,#FFD3A8 100%); }
+.dinner-emoji { background:linear-gradient(135deg,#FFE0BD 0%,#E9D8FF 100%); }
+.btn-save, .today-action, .btn-log, .btn-sm { background:linear-gradient(135deg,#FF8A2B,#E8590C); }
+.today-action-ghost { background:#fff; color:var(--pink-deep); }
+.fab { background:linear-gradient(135deg,#8B4DF0,#6D28D9); box-shadow:0 6px 20px rgba(109,40,217,0.45); }
+.task-check, .shop-check, .pin-dot { border-color:var(--line); }
+.task-check.checked, .shop-check.checked, .pin-dot.filled { border-color:transparent; }
+.spinner { border-color:var(--line); border-top-color:var(--pink); }
+.prog-bg, .sheet-handle { background:var(--line); }
+.sugg-wrap { border-top-color:rgba(232,89,12,0.35); }
+.sugg-card { background:rgba(255,255,255,0.85); }
+.idea-pill, .pill-pink { background:#FFE3C7; color:#C2410C; }
+.mini-score-num, .countdown { color:var(--purple); }
+.score-mini b { color:var(--purple); }
+#fridayShow { background:#1B0B33; }
+
+/* Halloween (vert slått på automatisk 1. oktober–2. november via klassen .halloween på <html>) */
+@keyframes bat-fly { 0% { transform:translate(-30px,0) scale(0.8); } 50% { transform:translate(160px,8px) scale(1.1); } 100% { transform:translate(380px,-4px) scale(0.8); } }
+@keyframes spider-swing { 0%,100% { transform:rotate(7deg); } 50% { transform:rotate(-7deg); } }
+@keyframes pumpkin-bob { 0%,100% { transform:translateY(0) rotate(-4deg); } 50% { transform:translateY(-3px) rotate(4deg); } }
+.halloween .header::before { content:'🦇'; position:absolute; top:10px; left:0; font-size:16px; opacity:0.55; animation:bat-fly 16s linear infinite; pointer-events:none; }
+.halloween .header::after { content:'🦇'; position:absolute; top:24px; left:0; font-size:11px; opacity:0.4; animation:bat-fly 23s linear infinite 6s; pointer-events:none; }
+.halloween .app-title::before { content:'🎃 '; display:inline-block; animation:pumpkin-bob 3s ease-in-out infinite; }
+.halloween .today-card { position:relative; }
+.halloween .today-card::after { content:'👻'; position:absolute; top:6px; right:10px; font-size:22px; opacity:0.9; animation:pumpkin-bob 4s ease-in-out infinite; pointer-events:none; }
+.halloween .today-nav, .halloween .today-label { position:relative; }
+.halloween .ob-title::before { content:'🎃 '; }
+.halloween .ob-title::after { content:' 👻'; }
+.halloween .nav-btn.active::after { background:var(--purple); }
+.halloween .content::after { content:'🕸️  🕷️  🦇  🕸️'; display:block; text-align:center; font-size:20px; letter-spacing:6px; opacity:0.5; padding:14px 0 0; }
+@media (prefers-reduced-motion: reduce) { .halloween .header::before, .halloween .header::after, .halloween .app-title::before, .halloween .today-card::after { animation:none; } }
 </style>
 </head>
 <body>
@@ -428,7 +476,7 @@ body { font-family:var(--font-b); color:var(--text); overflow:hidden; }
   <button class="fab" id="fab">＋</button>
   <div id="modal"></div>
   <div id="toastEl"></div>
-  <div class="version-badge">v3.1</div>
+  <div class="version-badge">v3.2</div>
 </div>
 
 <script>
@@ -1119,7 +1167,7 @@ async function renderDinner(){
 }
 
 /* ── MIDDAGSFORSLAG (fylt ut kvar fredag av ein planlagd Claude-jobb frå matprat.no) ── */
-const SUGGESTION_KIND_LABEL = { vegetar:'Vegetar', fisk:'Fisk' };
+const SUGGESTION_KIND_LABEL = { vegetar:'Vegetar', fisk:'Fisk', kylling:'Kylling', 'kjøtt':'Kjøtt', pasta:'Pasta', anna:'' };
 let dinnerSuggestions = [];
 function mondayOfStr(d){
   const x = new Date(d); x.setHours(12,0,0,0);
@@ -1134,11 +1182,16 @@ async function fetchDinnerSuggestionsHtml(){
   dinnerSuggestions = rows.filter(r=>r.week_start===wk);
   const wd = new Date(wk+'T12:00:00');
   const cards = dinnerSuggestions.map(r=>{
-    const safeUrl = /^https:///.test(r.url) ? r.url : '#';
+    const safeUrl = r.url && r.url.startsWith('https://') ? r.url : '#';
     const meta = [SUGGESTION_KIND_LABEL[r.kind]||r.kind, r.info].filter(Boolean).join(' · ');
+    const img = r.image_url && r.image_url.startsWith('https://') ?`<img class="sugg-thumb" src="${escapeAttr(r.image_url)}" alt="" loading="lazy">` : '';
+    const titleHtml = r.instructions
+      ? `<a class="sugg-title" onclick="openSuggestionDetail('${r.id}')">${escapeHtml(r.title)}</a>`
+      : `<a href="${escapeAttr(safeUrl)}" target="_blank" rel="noopener" class="sugg-title">${escapeHtml(r.title)}</a>`;
     return `<div class="sugg-card">
+      ${img}
       <div style="flex:1;min-width:0">
-        <a href="${escapeAttr(safeUrl)}" target="_blank" rel="noopener" class="sugg-title">${escapeHtml(r.title)}</a>
+        ${titleHtml}
         <div class="sugg-meta">${escapeHtml(meta)}</div>
       </div>
       <button class="today-action" onclick="pickSuggestion('${r.id}')">Bruk</button>
@@ -1157,12 +1210,33 @@ function suggUpdateDots(tr){
   const idx = Math.min(dots.length-1, Math.round(tr.scrollLeft/(card.offsetWidth+10)));
   dots.forEach((d,i)=>d.classList.toggle('active', i===idx));
 }
+function openSuggestionDetail(id){
+  const s = dinnerSuggestions.find(x=>x.id===id); if(!s) return;
+  if(!s.instructions){ window.open(s.url, '_blank', 'noopener'); return; }
+  const img = s.image_url && s.image_url.startsWith('https://') ?`<img class="dinner-photo" style="height:170px" src="${escapeAttr(s.image_url)}" alt="">` : '';
+  const meta = [SUGGESTION_KIND_LABEL[s.kind]||s.kind, s.info].filter(Boolean).join(' · ');
+  document.getElementById('modal').innerHTML = `
+  <div class="backdrop" onclick="if(event.target===this)closeModal()">
+    <div class="sheet">
+      <div class="sheet-handle"></div>
+      ${img}
+      <div class="sheet-title" style="margin-bottom:4px">${escapeHtml(s.title)}</div>
+      <div class="hint" style="margin-bottom:12px">${escapeHtml(meta)}${s.original_title ? ' · original: '+escapeHtml(s.original_title) : ''}</div>
+      ${s.ingredients ? `<div class="field"><label>Ingrediensar</label><div class="recipe-detail-text">${escapeHtml(s.ingredients)}</div></div>` : ''}
+      <div class="field"><label>Slik gjer du</label><div class="recipe-detail-text">${escapeHtml(s.instructions)}</div></div>
+      <div class="hint">Oppskrift frå <a href="${escapeAttr(s.url)}" target="_blank" rel="noopener">TheMealDB</a>, omsett til nynorsk av Claude.</div>
+      <button class="btn-save" onclick="closeModal();pickSuggestion('${s.id}')">Bruk til middag</button>
+      <button class="btn-cancel-s" onclick="closeModal()">Lukk</button>
+    </div>
+  </div>`;
+}
 function pickSuggestion(id){
   const s = dinnerSuggestions.find(x=>x.id===id);
   if(!s) return;
   const today = localDateStr(new Date());
   const spanDays = Math.round((new Date(s.week_start+'T12:00:00') - new Date(today+'T12:00:00'))/86400000) + 7;
-  openPickDay({ title:s.title, notes:s.url, startDate:today, days:Math.max(7, spanDays) });
+  openPickDay({ title:s.title, notes:s.url, startDate:today, days:Math.max(7, spanDays), imageUrl:s.image_url||null,
+    recipe: s.instructions ? { ingredients:s.ingredients||null, instructions:s.instructions+' (Kjelde: TheMealDB – '+s.url+')' } : null });
 }
 // Felles «vel dag»-dialog for middagsforslag (vekeforslag frå matprat og forslag frå biblioteket)
 let pickDayCtx = null;
@@ -1199,7 +1273,14 @@ async function saveDayPick(){
   try { rec = (await sb(`dinners?date=eq.${ds}&select=*`))[0] || null; } catch(e) {}
   if(rec && rec.cook_id && rec.cook_id!==currentUser.id && !currentUser.is_admin){ toast('Nokon andre har meldt seg på den dagen'); return; }
   if(rec && rec.meal && !confirm('Erstatte «'+rec.meal+'»?')) return;
-  const body = { date: ds, meal: ctx.title, notes: ctx.notes||null, recipe_id: null, image_url: null, created_by: currentUser.id };
+  let recipeId = null;
+  if(ctx.recipe){
+    try {
+      const ex = await sb(`recipes?title=eq.${encodeURIComponent(ctx.title)}&select=id`);
+      recipeId = ex[0] ? ex[0].id : (await sb('recipes', {method:'POST', headers:HR, body:JSON.stringify({ title:ctx.title, ingredients:ctx.recipe.ingredients, instructions:ctx.recipe.instructions, created_by:currentUser.id })}))[0].id;
+    } catch(e) {}
+  }
+  const body = { date: ds, meal: ctx.title, notes: recipeId ? null : (ctx.notes||null), recipe_id: recipeId, image_url: ctx.imageUrl||null, created_by: currentUser.id };
   const cook = document.getElementById('sgCook')?.value;
   const time = document.getElementById('sgTime')?.value;
   if(cook) body.cook_id = cook;
