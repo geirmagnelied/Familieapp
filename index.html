@@ -279,6 +279,16 @@ body { font-family:var(--font-b); color:var(--text); overflow:hidden; }
 .today-action { background:var(--pink-deep); color:#fff; border:none; border-radius:10px; font-family:var(--font-b); font-size:13px; font-weight:800; padding:10px 14px; cursor:pointer; }
 .today-action:active { transform:scale(0.97); }
 .today-action-wide { display:block; width:100%; margin-top:14px; }
+.sugg-wrap { margin-top:14px; padding-top:10px; border-top:1px dashed var(--pink); }
+.sugg-label { font-size:10px; font-weight:800; text-transform:uppercase; letter-spacing:0.6px; color:var(--pink-deep); margin-bottom:6px; }
+.sugg-track { display:flex; gap:10px; overflow-x:auto; scroll-snap-type:x mandatory; scrollbar-width:none; -webkit-overflow-scrolling:touch; }
+.sugg-track::-webkit-scrollbar { display:none; }
+.sugg-card { flex:0 0 100%; scroll-snap-align:start; box-sizing:border-box; display:flex; align-items:center; gap:10px; background:rgba(255,255,255,0.8); border-radius:12px; padding:10px 12px; }
+.sugg-title { font-weight:800; font-size:14px; color:var(--charcoal); text-decoration:underline; }
+.sugg-meta { font-size:12px; color:var(--muted); font-weight:600; margin-top:2px; }
+.sugg-dots { display:flex; justify-content:center; gap:6px; margin-top:8px; }
+.sugg-dot { width:7px; height:7px; border-radius:50%; background:var(--rose); opacity:0.5; }
+.sugg-dot.active { background:var(--pink-deep); opacity:1; }
 .today-action-ghost { background:#fff; color:var(--pink-deep); border:1.5px solid var(--pink); }
 .today-btn-row { display:flex; gap:8px; margin-top:14px; }
 .today-btn-row .today-action { flex:1; }
@@ -418,7 +428,7 @@ body { font-family:var(--font-b); color:var(--text); overflow:hidden; }
   <button class="fab" id="fab">＋</button>
   <div id="modal"></div>
   <div id="toastEl"></div>
-  <div class="version-badge">v3.0</div>
+  <div class="version-badge">v3.1</div>
 </div>
 
 <script>
@@ -1059,6 +1069,8 @@ async function renderDinner(){
   const showDag = calTypeFilter==='all' || calTypeFilter==='dag';
   const showEtterm = calTypeFilter==='all' || calTypeFilter==='ettermiddag';
 
+  const suggHtml = showMiddag ? await fetchDinnerSuggestionsHtml() : '';
+
   const middagHtml = !showMiddag ? '' : `
   <div class="card today-card">
     <div class="today-row">
@@ -1071,9 +1083,8 @@ async function renderDinner(){
       </div>
       <button class="today-action" onclick="openDinnerModal('${ds}')">${hasPlan?'Endre':'Planlegg'}</button>
     </div>
+    ${suggHtml}
   </div>`;
-
-  const suggHtml = showMiddag ? await fetchDinnerSuggestionsHtml() : '';
 
   const actHtml = (!showDag && !showEtterm) ? '' : `
   <div class="card">
@@ -1104,7 +1115,6 @@ async function renderDinner(){
   </div>
   ${bdayHtml}
   ${middagHtml}
-  ${suggHtml}
   ${actHtml}`;
 }
 
@@ -1123,22 +1133,36 @@ async function fetchDinnerSuggestionsHtml(){
   const wk = rows[0].week_start;
   dinnerSuggestions = rows.filter(r=>r.week_start===wk);
   const wd = new Date(wk+'T12:00:00');
-  const rowsHtml = dinnerSuggestions.map(r=>{
-    const safeUrl = /^https:\/\//.test(r.url) ? r.url : '#';
+  const cards = dinnerSuggestions.map(r=>{
+    const safeUrl = /^https:///.test(r.url) ? r.url : '#';
     const meta = [SUGGESTION_KIND_LABEL[r.kind]||r.kind, r.info].filter(Boolean).join(' · ');
-    return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--border,#eee)">
+    return `<div class="sugg-card">
       <div style="flex:1;min-width:0">
-        <a href="${escapeAttr(safeUrl)}" target="_blank" rel="noopener" style="font-weight:800;color:var(--charcoal);text-decoration:underline">${escapeHtml(r.title)}</a>
-        <div style="font-size:12px;color:var(--muted);font-weight:600;margin-top:2px">${escapeHtml(meta)}</div>
+        <a href="${escapeAttr(safeUrl)}" target="_blank" rel="noopener" class="sugg-title">${escapeHtml(r.title)}</a>
+        <div class="sugg-meta">${escapeHtml(meta)}</div>
       </div>
       <button class="today-action" onclick="pickSuggestion('${r.id}')">Bruk</button>
     </div>`;
   }).join('');
-  return `<div class="card"><div class="card-title">Middagsforslag · veke frå ${wd.getDate()}. ${MONTHS_NO[wd.getMonth()]}</div>${rowsHtml}</div>`;
+  const dots = dinnerSuggestions.length>1 ? `<div class="sugg-dots" id="suggDots">${dinnerSuggestions.map((_,i)=>`<span class="sugg-dot ${i===0?'active':''}"></span>`).join('')}</div>` : '';
+  return `<div class="sugg-wrap">
+    <div class="sugg-label">Forslag til middag${dinnerSuggestions.length>1?' · sveip →':''}</div>
+    <div class="sugg-track" onscroll="suggUpdateDots(this)">${cards}</div>
+    ${dots}
+  </div>`;
+}
+function suggUpdateDots(tr){
+  const dots = document.querySelectorAll('#suggDots .sugg-dot');
+  const card = tr.querySelector('.sugg-card'); if(!card || !dots.length) return;
+  const idx = Math.min(dots.length-1, Math.round(tr.scrollLeft/(card.offsetWidth+10)));
+  dots.forEach((d,i)=>d.classList.toggle('active', i===idx));
 }
 function pickSuggestion(id){
   const s = dinnerSuggestions.find(x=>x.id===id);
-  if(s) openPickDay({ title:s.title, notes:s.url, startDate:s.week_start });
+  if(!s) return;
+  const today = localDateStr(new Date());
+  const spanDays = Math.round((new Date(s.week_start+'T12:00:00') - new Date(today+'T12:00:00'))/86400000) + 7;
+  openPickDay({ title:s.title, notes:s.url, startDate:today, days:Math.max(7, spanDays) });
 }
 // Felles «vel dag»-dialog for middagsforslag (vekeforslag frå matprat og forslag frå biblioteket)
 let pickDayCtx = null;
@@ -1146,7 +1170,7 @@ function openPickDay(ctx){
   pickDayCtx = ctx;
   const DOW=['søndag','måndag','tysdag','onsdag','torsdag','fredag','laurdag'];
   const start = new Date(ctx.startDate+'T12:00:00');
-  const dayOpts = Array.from({length:7},(_,i)=>{
+  const dayOpts = Array.from({length:ctx.days||7},(_,i)=>{
     const d = new Date(start); d.setDate(start.getDate()+i);
     return `<option value="${localDateStr(d)}">${DOW[d.getDay()]} ${d.getDate()}.${d.getMonth()+1}</option>`;
   }).join('');
