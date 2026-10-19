@@ -279,6 +279,35 @@ body { font-family:var(--font-b); color:var(--text); overflow:hidden; }
 .today-action { background:var(--pink-deep); color:#fff; border:none; border-radius:10px; font-family:var(--font-b); font-size:13px; font-weight:800; padding:10px 14px; cursor:pointer; }
 .today-action:active { transform:scale(0.97); }
 .today-action-wide { display:block; width:100%; margin-top:14px; }
+.today-action-ghost { background:#fff; color:var(--pink-deep); border:1.5px solid var(--pink); }
+.today-btn-row { display:flex; gap:8px; margin-top:14px; }
+.today-btn-row .today-action { flex:1; }
+.today-time { font-size:14px; font-weight:800; color:var(--charcoal); text-align:center; margin-top:4px; }
+.dinner-photo { width:100%; height:150px; object-fit:cover; border-radius:12px; display:block; margin:6px 0 10px; }
+.dinner-emoji { display:flex; align-items:center; justify-content:center; font-size:64px; line-height:1; background:linear-gradient(135deg,#FADADF 0%,#F5EEF1 100%); }
+.score-mini { display:flex; align-items:center; justify-content:center; gap:6px 12px; flex-wrap:wrap; padding:8px 12px; font-size:12px; font-weight:700; color:var(--muted); margin-top:18px; }
+.score-mini b { font-family:var(--font-h); font-size:14px; color:var(--pink-deep); }
+.score-mini-btn { background:none; border:1.5px solid var(--border); color:var(--pink-deep); border-radius:10px; font-family:var(--font-b); font-size:12px; font-weight:800; padding:4px 10px; cursor:pointer; }
+.ideas-overlay { position:fixed; inset:0; z-index:150; background:var(--bg); display:flex; flex-direction:column; max-width:480px; margin:0 auto; }
+.ideas-head { display:flex; align-items:center; justify-content:space-between; padding:14px 16px 6px; }
+.ideas-title { font-family:var(--font-h); font-size:20px; font-weight:800; color:var(--charcoal); }
+.ideas-close { background:none; border:1.5px solid var(--border); color:var(--muted); border-radius:10px; font-family:var(--font-b); font-size:13px; font-weight:800; padding:6px 12px; cursor:pointer; }
+.ideas-filters { padding:4px 0 6px; }
+.ideas-chiprow { display:flex; gap:6px; overflow-x:auto; padding:3px 16px; scrollbar-width:none; }
+.ideas-chiprow::-webkit-scrollbar { display:none; }
+.ideas-chiprow .type-chip { flex:0 0 auto; }
+.ideas-track { flex:1; min-height:0; display:flex; gap:12px; overflow-x:auto; scroll-snap-type:x mandatory; padding:8px 16px 12px; scrollbar-width:none; -webkit-overflow-scrolling:touch; }
+.ideas-track::-webkit-scrollbar { display:none; }
+.idea-card { flex:0 0 calc(100% - 4px); scroll-snap-align:center; background:var(--card); border:1.5px solid var(--border); border-radius:18px; padding:16px; display:flex; flex-direction:column; overflow-y:auto; }
+.idea-emoji { height:170px; font-size:86px; margin:0 0 14px; }
+.idea-title { font-family:var(--font-h); font-size:22px; font-weight:800; color:var(--charcoal); line-height:1.25; }
+.idea-desc { font-size:14px; font-weight:600; color:var(--muted); line-height:1.5; margin-top:8px; }
+.idea-pills { display:flex; flex-wrap:wrap; gap:6px; margin-top:12px; }
+.idea-pill { font-size:11px; font-weight:800; color:var(--pink-deep); background:var(--pink-light); border-radius:20px; padding:4px 10px; }
+.idea-actions { display:flex; gap:8px; margin-top:auto; padding-top:16px; }
+.idea-actions .today-action { flex:1; }
+.ideas-nav { display:flex; align-items:center; justify-content:center; gap:18px; padding:4px 0 22px; }
+.ideas-counter { font-size:13px; font-weight:800; color:var(--muted); min-width:60px; text-align:center; }
 
 .dinner-week-nav { display:flex; align-items:center; gap:8px; margin-bottom:14px; }
 .dinner-week-label { flex:1; text-align:center; font-family:var(--font-h); font-size:15px; font-weight:700; color:var(--charcoal); }
@@ -389,7 +418,7 @@ body { font-family:var(--font-b); color:var(--text); overflow:hidden; }
   <button class="fab" id="fab">＋</button>
   <div id="modal"></div>
   <div id="toastEl"></div>
-  <div class="version-badge">v2.9</div>
+  <div class="version-badge">v3.0</div>
 </div>
 
 <script>
@@ -656,7 +685,7 @@ function openMenu(){
 let currentTab='home';
 function switchTab(tab,btn){
   currentTab=tab;
-  if(tab==='home') dashDayOffset=0;
+  if(tab==='home') dashDayOffset=null;
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active',b===btn));
   renderTab(tab);
 }
@@ -712,11 +741,34 @@ async function renderTab(tab){
 }
 
 /* ── HOME ── */
-let dashDayOffset = 0; // 0 = i dag, opp til 6 dagar fram, styrer dagsnavigasjonen på Dashboard
+const DEFAULT_DINNER_TIME = '17:00'; // vist når ein middag ikkje har eige klokkeslett
+const DINNER_GRACE_MIN = 60;         // forsiden byter til neste dags middag når middagen er over (tidspunkt + dette)
+let dashDayOffset = null;            // null = automatisk (i dag, eller i morgon når middagen er over); elles 0–6 dagar fram
+let dashEffOffset = 0;               // dagen som faktisk vart vist sist
 
 function shiftDashDay(delta){
-  dashDayOffset = Math.max(0, Math.min(6, dashDayOffset+delta));
+  dashDayOffset = Math.max(0, Math.min(6, dashEffOffset+delta));
   renderTab('home');
+}
+function dinnerTimeStr(rec){ return rec && rec.dinner_time ? rec.dinner_time.slice(0,5) : DEFAULT_DINNER_TIME; }
+function dinnerPassed(rec){
+  const [h,m] = dinnerTimeStr(rec).split(':').map(Number);
+  const limit = new Date(); limit.setHours(h, m+DINNER_GRACE_MIN, 0, 0);
+  return new Date() > limit;
+}
+function dinnerNotesHtml(rec){
+  if(!rec || !rec.notes) return '';
+  const n = rec.notes.trim();
+  return /^https:\/\/\S+$/.test(n)
+    ? `<div class="today-notes"><a href="${escapeAttr(n)}" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline">Sjå oppskrift</a></div>`
+    : `<div class="today-notes">${escapeHtml(rec.notes)}</div>`;
+}
+function dinnerPhotoHtml(rec){
+  if(!rec || !rec.meal) return '';
+  const u = rec.image_url;
+  if(u && /^(data:image\/|https:\/\/)/.test(u)) return `<img class="dinner-photo" src="${escapeAttr(u)}" alt="">`;
+  const idea = ideaFor(rec.meal);
+  return `<div class="dinner-photo dinner-emoji">${escapeHtml(idea ? idea.emoji : '🍽️')}</div>`;
 }
 
 async function renderHome(){
@@ -725,56 +777,153 @@ async function renderHome(){
   const myWeek=allLogs.filter(l=>weekKey(new Date(l.created_at))===wk).reduce((a,l)=>a+l.pts,0);
   const myToday=allLogs.filter(l=>l.created_at.slice(0,10)===dateStr()).reduce((a,l)=>a+l.pts,0);
 
-  // Dagsveljar for middag — større kalenderkort, éin dag om gongen
+  await loadDinnerIdeas();
+
+  // Middagskort — éin dag om gongen. Når middagstida er over, vert neste dags middag vist.
   let dinnerCard = '';
   try {
-    const d = new Date(); d.setDate(d.getDate()+dashDayOffset);
-    const ds = dateStr(d);
-    const dRows = await sb(`dinners?date=eq.${ds}&select=*`);
-    const dRec = dRows[0] || null;
+    const todayStr = localDateStr(new Date());
+    const todayRec = (await sb(`dinners?date=eq.${todayStr}&select=*`))[0] || null;
+    const eff = dashDayOffset===null ? (dinnerPassed(todayRec) ? 1 : 0) : dashDayOffset;
+    dashEffOffset = eff;
+    const d = new Date(); d.setDate(d.getDate()+eff);
+    const ds = localDateStr(d);
+    const dRec = eff===0 ? todayRec : ((await sb(`dinners?date=eq.${ds}&select=*`))[0] || null);
     const cook = dRec && dRec.cook_id ? members.find(m=>m.id===dRec.cook_id) : null;
     const hasPlan = dRec && (dRec.meal || dRec.cook_id);
     const DOW=['søndag','måndag','tysdag','onsdag','torsdag','fredag','laurdag'];
-    const dayLabel = dashDayOffset===0 ? 'I dag' : dashDayOffset===1 ? 'I morgon' : `${DOW[d.getDay()]} ${d.getDate()}.${d.getMonth()+1}`;
+    const dayLabel = eff===0 ? 'I dag' : eff===1 ? 'I morgon' : `${DOW[d.getDay()]} ${d.getDate()}.${d.getMonth()+1}`;
 
     dinnerCard = `
     <div class="card today-card">
       <div class="today-nav">
-        <button class="date-arrow" onclick="shiftDashDay(-1)" ${dashDayOffset===0?'disabled':''}>‹</button>
+        <button class="date-arrow" onclick="shiftDashDay(-1)" ${eff===0?'disabled':''}>‹</button>
         <div class="today-daylabel">${dayLabel}</div>
-        <button class="date-arrow" onclick="shiftDashDay(1)" ${dashDayOffset>=6?'disabled':''}>›</button>
+        <button class="date-arrow" onclick="shiftDashDay(1)" ${eff>=6?'disabled':''}>›</button>
       </div>
       <div class="today-label">Middag</div>
+      ${dinnerPhotoHtml(dRec)}
       <div class="today-meal ${hasPlan && dRec.meal ? '' : 'empty'}">${hasPlan && dRec.meal ? escapeHtml(dRec.meal) : 'Ingen middag planlagt'}</div>
-      ${cook ? `<div class="today-cook">${cook.name} lagar</div>` : ''}
-      ${dRec && dRec.notes ? `<div class="today-notes">${escapeHtml(dRec.notes)}</div>` : ''}
+      ${hasPlan ? `<div class="today-time">kl. ${dinnerTimeStr(dRec)}</div>` : ''}
+      ${cook ? `<div class="today-cook">${cook.name} lagar</div>` : (hasPlan ? `<div class="today-cook" style="opacity:0.6">Ingen kokk enno</div>` : '')}
+      ${dinnerNotesHtml(dRec)}
       ${dRec && dRec.recipe_id ? `<div class="today-cook" style="cursor:pointer;text-decoration:underline" onclick="openRecipeDetail('${dRec.recipe_id}')">Sjå oppskrift</div>` : ''}
-      <button class="today-action today-action-wide" onclick="openDinnerModal('${ds}')">${hasPlan ? 'Endre plan' : 'Planlegg middag'}</button>
+      <div class="today-btn-row">
+        <button class="today-action today-action-ghost" onclick="showIdeas()">Vis middagsforslag</button>
+        <button class="today-action" onclick="openDinnerModal('${ds}')">${hasPlan ? 'Endre plan' : 'Planlegg'}</button>
+      </div>
     </div>`;
   } catch(e) { dinnerCard = ''; }
 
-  const scoreRow = `
-  <div class="card mini-score-card">
-    <div class="mini-score-item"><div class="mini-score-num">${myToday}</div><div class="mini-score-lbl">poeng i dag</div></div>
-    <div class="mini-score-divider"></div>
-    <div class="mini-score-item"><div class="mini-score-num">${myWeek}</div><div class="mini-score-lbl">poeng denne veka</div></div>
+  // Poengtavla er lite brukt: éi tynn linje heilt nederst
+  const scoreBar = `
+  <div class="card score-mini">
+    <span>Poeng</span>
+    <span><b>${myToday}</b> i dag</span>
+    <span><b>${myWeek}</b> denne veka</span>
+    ${isFridayReveal()
+      ? `<button class="score-mini-btn" onclick="showFridayReveal()">Sjå poengtavla</button>`
+      : `<span>· skjult til fre. kl. 18 (<span id="countdown">—</span>)</span>`}
   </div>`;
-
-  const locked=isFridayReveal()?'':`
-    <div class="card">
-      <div class="card-title">Poengtavle</div>
-      <div class="locked-box">
-        <div class="locked-title">Skjult til fredag kl. 18</div>
-        <div class="countdown" id="countdown">—</div>
-        <div class="locked-sub">Alle poeng blir avslørt kvar fredag kveld — saman!</div>
-      </div>
-    </div>`;
 
   setTimeout(updateCountdown,100);
   return `
   ${dinnerCard}
-  ${scoreRow}
-  ${locked}`;
+  ${scoreBar}`;
+}
+
+/* ── MIDDAGSIDEAR (fast bibliotek i dinner_ideas, vist som sveipbare kort) ── */
+let dinnerIdeasCache = null;
+async function loadDinnerIdeas(){
+  if(dinnerIdeasCache) return dinnerIdeasCache;
+  try { dinnerIdeasCache = await sb('dinner_ideas?select=*&order=title'); return dinnerIdeasCache; }
+  catch(e) { return []; }
+}
+function ideaFor(title){
+  const t = String(title||'').trim().toLowerCase();
+  return t ? (dinnerIdeasCache||[]).find(i=>i.title.toLowerCase()===t) : null;
+}
+const IDEA_TIME_FILTERS = [
+  { key:'rask',    label:'Under 25 min', test:m=>m<=25 },
+  { key:'middels', label:'25–45 min',    test:m=>m>25 && m<=45 },
+  { key:'lang',    label:'Over 45 min',  test:m=>m>45 },
+];
+const IDEA_TYPE_FILTERS = [
+  ['vegetar','Vegetar'],['fisk','Fisk'],['kylling','Kylling'],['kjøtt','Kjøtt'],['pasta','Pasta'],['suppe','Suppe og gryte'],['ovn','Ovn'],['barnevenleg','Barnevenleg']
+];
+let ideaFilters = { time:'', type:'', diff:'' };
+let ideaOrder = [];
+function showIdeas(){
+  if(!dinnerIdeasCache || !dinnerIdeasCache.length){ toast('Ingen middagsforslag lagra enno'); return; }
+  ideaFilters = { time:'', type:'', diff:'' };
+  ideaOrder = dinnerIdeasCache.slice();
+  for(let i=ideaOrder.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [ideaOrder[i],ideaOrder[j]]=[ideaOrder[j],ideaOrder[i]]; }
+  let ov = document.getElementById('ideasOverlay');
+  if(!ov){ ov = document.createElement('div'); ov.id='ideasOverlay'; ov.className='ideas-overlay'; document.body.appendChild(ov); }
+  renderIdeas();
+}
+function closeIdeas(){ document.getElementById('ideasOverlay')?.remove(); }
+function ideaFiltered(){
+  const tf = IDEA_TIME_FILTERS.find(f=>f.key===ideaFilters.time);
+  return ideaOrder.filter(i=>
+    (!tf || tf.test(i.minutes)) &&
+    (!ideaFilters.type || i.tags.includes(ideaFilters.type)) &&
+    (!ideaFilters.diff || i.difficulty===ideaFilters.diff));
+}
+function setIdeaFilter(k,v){ ideaFilters[k] = ideaFilters[k]===v ? '' : v; renderIdeas(); }
+function ideaCardHtml(i){
+  const pills = [`${i.minutes} min`, i.difficulty, ...i.tags.map(t=>(IDEA_TYPE_FILTERS.find(x=>x[0]===t)||[t,t])[1])];
+  return `<div class="idea-card">
+    <div class="dinner-photo dinner-emoji idea-emoji">${escapeHtml(i.emoji)}</div>
+    <div class="idea-title">${escapeHtml(i.title)}</div>
+    <div class="idea-desc">${escapeHtml(i.description||'')}</div>
+    <div class="idea-pills">${pills.map(p=>`<span class="idea-pill">${escapeHtml(p)}</span>`).join('')}</div>
+    <div class="idea-actions">
+      <button class="today-action" onclick="ideaUse('${i.id}')">Bruk til middag</button>
+      <a class="today-action today-action-ghost" style="text-align:center;text-decoration:none" target="_blank" rel="noopener" href="https://www.google.com/search?q=${encodeURIComponent(i.title+' oppskrift')}">Finn oppskrift</a>
+    </div>
+  </div>`;
+}
+function ideaChip(k,v,label){
+  return `<button class="type-chip ${ideaFilters[k]===v?'active':''}" onclick="setIdeaFilter('${k}','${v}')">${label}</button>`;
+}
+function renderIdeas(){
+  const ov = document.getElementById('ideasOverlay'); if(!ov) return;
+  const list = ideaFiltered();
+  ov.innerHTML = `
+    <div class="ideas-head">
+      <div class="ideas-title">Middagsforslag</div>
+      <button class="ideas-close" onclick="closeIdeas()">Lukk</button>
+    </div>
+    <div class="ideas-filters">
+      <div class="ideas-chiprow">${IDEA_TIME_FILTERS.map(f=>ideaChip('time',f.key,f.label)).join('')}</div>
+      <div class="ideas-chiprow">${IDEA_TYPE_FILTERS.map(([k,l])=>ideaChip('type',k,l)).join('')}</div>
+      <div class="ideas-chiprow">${ideaChip('diff','Enkel','Enkel')}${ideaChip('diff','Middels','Middels')}${ideaChip('diff','Avansert','Avansert')}</div>
+    </div>
+    ${list.length ? `
+    <div class="ideas-track" id="ideasTrack" onscroll="ideaUpdateCounter()">${list.map(ideaCardHtml).join('')}</div>
+    <div class="ideas-nav">
+      <button class="date-arrow" onclick="ideaGo(-1)">‹</button>
+      <span id="ideasCounter" class="ideas-counter">1 / ${list.length}</span>
+      <button class="date-arrow" onclick="ideaGo(1)">›</button>
+    </div>` : `
+    <div class="cal-empty" style="padding:40px 20px;text-align:center">Ingen forslag med desse filtera.<br><br>
+      <button class="today-action" onclick="ideaFilters={time:'',type:'',diff:''};renderIdeas()">Nullstill filter</button></div>`}`;
+}
+function ideaGo(dir){
+  const tr = document.getElementById('ideasTrack'); if(!tr) return;
+  const card = tr.querySelector('.idea-card'); if(!card) return;
+  tr.scrollBy({ left: dir*(card.offsetWidth+12), behavior:'smooth' });
+}
+function ideaUpdateCounter(){
+  const tr = document.getElementById('ideasTrack'), c = document.getElementById('ideasCounter');
+  const card = tr && tr.querySelector('.idea-card'); if(!c || !card) return;
+  const n = tr.querySelectorAll('.idea-card').length;
+  c.textContent = `${Math.min(n, Math.round(tr.scrollLeft/(card.offsetWidth+12))+1)} / ${n}`;
+}
+function ideaUse(id){
+  const i = dinnerIdeasCache.find(x=>x.id===id); if(!i) return;
+  openPickDay({ title:i.title, notes:null, startDate:localDateStr(new Date()) });
 }
 
 /* ── KALENDER (dag-visning: middag + aktivitetar) ── */
@@ -916,10 +1065,8 @@ async function renderDinner(){
       <div style="flex:1;min-width:0">
         <div class="today-label">Middag</div>
         <div class="today-meal ${hasPlan && dRec.meal ? '' : 'empty'}">${hasPlan && dRec.meal ? escapeHtml(dRec.meal) : 'Ingen middag planlagt'}</div>
-        ${cook ? `<div class="today-cook">${cook.name} lagar</div>` : ''}
-        ${dRec && dRec.notes ? (/^https:\/\/\S+$/.test(dRec.notes.trim())
-          ? `<div class="today-notes"><a href="${escapeAttr(dRec.notes.trim())}" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline">Sjå oppskrift</a></div>`
-          : `<div class="today-notes">${escapeHtml(dRec.notes)}</div>`) : ''}
+        ${hasPlan ? `<div class="today-cook">${cook ? cook.name+' lagar · ' : ''}kl. ${dinnerTimeStr(dRec)}</div>` : ''}
+        ${dinnerNotesHtml(dRec)}
         ${dRec && dRec.recipe_id ? `<div class="today-cook" style="cursor:pointer;text-decoration:underline" onclick="openRecipeDetail('${dRec.recipe_id}')">Sjå oppskrift</div>` : ''}
       </div>
       <button class="today-action" onclick="openDinnerModal('${ds}')">${hasPlan?'Endre':'Planlegg'}</button>
@@ -991,39 +1138,55 @@ async function fetchDinnerSuggestionsHtml(){
 }
 function pickSuggestion(id){
   const s = dinnerSuggestions.find(x=>x.id===id);
-  if(!s) return;
-  const DOWFULL=['måndag','tysdag','onsdag','torsdag','fredag','laurdag','søndag'];
-  const wd = new Date(s.week_start+'T12:00:00');
-  const opts = DOWFULL.map((n,i)=>{
-    const d = new Date(wd); d.setDate(wd.getDate()+i);
-    return `<option value="${localDateStr(d)}">${n} ${d.getDate()}.${d.getMonth()+1}</option>`;
+  if(s) openPickDay({ title:s.title, notes:s.url, startDate:s.week_start });
+}
+// Felles «vel dag»-dialog for middagsforslag (vekeforslag frå matprat og forslag frå biblioteket)
+let pickDayCtx = null;
+function openPickDay(ctx){
+  pickDayCtx = ctx;
+  const DOW=['søndag','måndag','tysdag','onsdag','torsdag','fredag','laurdag'];
+  const start = new Date(ctx.startDate+'T12:00:00');
+  const dayOpts = Array.from({length:7},(_,i)=>{
+    const d = new Date(start); d.setDate(start.getDate()+i);
+    return `<option value="${localDateStr(d)}">${DOW[d.getDay()]} ${d.getDate()}.${d.getMonth()+1}</option>`;
   }).join('');
   document.getElementById('modal').innerHTML = `
   <div class="backdrop" onclick="if(event.target===this)closeModal()">
     <div class="sheet">
       <div class="sheet-handle"></div>
-      <div class="sheet-title">${escapeHtml(s.title)}</div>
-      <div class="field"><label>Kva dag skal vi ete dette</label><select id="sgDay">${opts}</select></div>
-      <button class="btn-save" onclick="saveSuggestionDay('${id}')">Legg til middagskalenderen</button>
+      <div class="sheet-title">${escapeHtml(ctx.title)}</div>
+      <div class="field"><label>Kva dag skal vi ete dette</label><select id="sgDay">${dayOpts}</select></div>
+      <div class="field-row">
+        <div class="field"><label>Kven lagar</label>
+          <select id="sgCook"><option value="">— Ingen enno —</option>${members.map(m=>`<option value="${m.id}">${m.name}</option>`).join('')}</select>
+        </div>
+        <div class="field"><label>Kl.</label><select id="sgTime">${timeSelectOptions(DEFAULT_DINNER_TIME)}</select></div>
+      </div>
+      <button class="btn-save" onclick="saveDayPick()">Legg til middagskalenderen</button>
       <button class="btn-cancel-s" onclick="closeModal()">Avbryt</button>
     </div>
   </div>`;
 }
-async function saveSuggestionDay(id){
-  const s = dinnerSuggestions.find(x=>x.id===id);
+async function saveDayPick(){
+  const ctx = pickDayCtx;
   const ds = document.getElementById('sgDay')?.value;
-  if(!s || !ds) return;
+  if(!ctx || !ds) return;
   let rec = null;
   try { rec = (await sb(`dinners?date=eq.${ds}&select=*`))[0] || null; } catch(e) {}
   if(rec && rec.cook_id && rec.cook_id!==currentUser.id && !currentUser.is_admin){ toast('Nokon andre har meldt seg på den dagen'); return; }
   if(rec && rec.meal && !confirm('Erstatte «'+rec.meal+'»?')) return;
+  const body = { date: ds, meal: ctx.title, notes: ctx.notes||null, recipe_id: null, image_url: null, created_by: currentUser.id };
+  const cook = document.getElementById('sgCook')?.value;
+  const time = document.getElementById('sgTime')?.value;
+  if(cook) body.cook_id = cook;
+  if(time) body.dinner_time = time;
   try {
     await sb('dinners?on_conflict=date', {
       method:'POST',
       headers:{...HR, 'Prefer':'return=representation,resolution=merge-duplicates'},
-      body: JSON.stringify({ date: ds, meal: s.title, notes: s.url, recipe_id: null, created_by: currentUser.id })
+      body: JSON.stringify(body)
     });
-    closeModal(); toast('Middag lagt til'); renderTab('dinner');
+    closeModal(); closeIdeas(); toast('Middag lagt til'); renderTab(currentTab);
   } catch(e) { toast('Kunne ikkje lagre'); }
 }
 
@@ -1344,6 +1507,16 @@ async function openDinnerModal(ds){
         <div class="recipe-pick-list" id="dRecipePickList" style="display:none"></div>
       </div>
       <div class="field">
+        <label>Klokkeslett for middag</label>
+        <select id="dTime">${timeSelectOptions((rec && rec.dinner_time) || DEFAULT_DINNER_TIME)}</select>
+      </div>
+      <div class="field">
+        <label>Bilete av middagen (valfritt)</label>
+        <input type="hidden" id="dImage" value="${rec && rec.image_url ? escapeAttr(rec.image_url) : ''}">
+        <div id="dPhotoPrev"></div>
+        <input type="file" accept="image/*" onchange="dinnerPhotoPicked(this)">
+      </div>
+      <div class="field">
         <label>Notat (valfritt)</label>
         <textarea id="dNotes" placeholder="t.d. Tida er ikkje heime til middag">${rec && rec.notes ? escapeHtml(rec.notes) : ''}</textarea>
       </div>
@@ -1352,6 +1525,43 @@ async function openDinnerModal(ds){
       <button class="btn-cancel-s" onclick="closeModal()">Avbryt</button>
     </div>
   </div>`;
+  dinnerPhotoPreview();
+}
+
+function resizeImageToDataUrl(file, max, quality){
+  return new Promise((resolve, reject)=>{
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = ()=>{
+      const k = Math.min(1, max/Math.max(img.width, img.height));
+      const c = document.createElement('canvas');
+      c.width = Math.round(img.width*k); c.height = Math.round(img.height*k);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url);
+      resolve(c.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = ()=>{ URL.revokeObjectURL(url); reject(new Error('bilete')); };
+    img.src = url;
+  });
+}
+async function dinnerPhotoPicked(input){
+  const f = input.files && input.files[0];
+  if(!f) return;
+  try {
+    document.getElementById('dImage').value = await resizeImageToDataUrl(f, 800, 0.72);
+    dinnerPhotoPreview();
+  } catch(e) { toast('Kunne ikkje lese biletet'); }
+}
+function dinnerPhotoClear(){
+  document.getElementById('dImage').value = '';
+  dinnerPhotoPreview();
+}
+function dinnerPhotoPreview(){
+  const prev = document.getElementById('dPhotoPrev'), val = document.getElementById('dImage')?.value;
+  if(!prev) return;
+  prev.innerHTML = val && /^(data:image\/|https:\/\/)/.test(val)
+    ? `<img class="dinner-photo" style="height:110px;margin-top:0" src="${escapeAttr(val)}" alt=""><button class="btn-cancel-s" style="margin:0 0 8px" onclick="dinnerPhotoClear()">Fjern bilete</button>`
+    : '';
 }
 
 function escapeAttr(str){
@@ -1364,7 +1574,10 @@ async function saveDinner(ds){
   const notes = document.getElementById('dNotes')?.value.trim() || null;
   const recipe_id = document.getElementById('dRecipeId')?.value || null;
 
-  const body = { date: ds, cook_id: cook_id || null, meal, notes, recipe_id, created_by: currentUser.id };
+  const dinner_time = document.getElementById('dTime')?.value || null;
+  const image_url = document.getElementById('dImage')?.value || null;
+
+  const body = { date: ds, cook_id: cook_id || null, meal, notes, recipe_id, dinner_time, image_url, created_by: currentUser.id };
 
   try {
     // Upsert on the unique date column
