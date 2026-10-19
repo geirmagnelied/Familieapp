@@ -12,13 +12,13 @@
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;700;800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-html, body { height: 100%; overscroll-behavior: none; background: #FFF4E6; }
+html, body { height: 100%; overscroll-behavior: none; background: #FDEAF1; }
 :root {
-  --bg:#FFF4E6; --surface:#FFF9F2; --card:#FFFFFF; --border:rgba(124,58,237,0.10); --line:#D9C8F5; --purple:#7C3AED;
-  --text:#2B1B3D; --muted:#8A7B9C; --soft:#F6F0FF;
-  --pink:#FF7A18; --pink-light:#FFE3C7; --pink-deep:#E8590C; --rose:#FFB26B;
-  --grey:#7A6D8C; --charcoal:#2B1B3D; --mint:#2FBF8A; --gold:#FFC233;
-  --radius:16px; --shadow:0 4px 18px rgba(91,33,182,0.09);
+  --bg:#FDEAF1; --surface:#FFF5F9; --card:#FFFFFF; --border:rgba(216,27,96,0.10); --line:#F3BFD3; --purple:#C2185B;
+  --text:#3A1F2D; --muted:#A27C8E; --soft:#FFF0F6;
+  --pink:#F0407A; --pink-light:#FFD3E3; --pink-deep:#D81B60; --rose:#FF8FB5;
+  --grey:#8C6D7C; --charcoal:#3A1F2D; --mint:#2FBF8A; --gold:#FFC233;
+  --radius:16px; --shadow:0 4px 18px rgba(216,27,96,0.10);
   --font-h:'Baloo 2',sans-serif; --font-b:'Nunito',sans-serif;
 }
 body { font-family:var(--font-b); color:var(--text); overflow:hidden; }
@@ -374,28 +374,29 @@ body { font-family:var(--font-b); color:var(--text); overflow:hidden; }
 .ideas-close, .score-mini-btn, .user-chip, .hamburger-btn, .pill-grey, .pill-gold, .df-flag,
 .recurring-badge, .wishlist-claim-btn, .btn-del, .chat-bubble, .recipe-pick-list, .btn-log.done { border-color:transparent !important; }
 .field input:focus, .field select:focus, .field textarea:focus, .add-input:focus, .search-input:focus,
-.min-input:focus, .chat-input:focus { border-color:var(--pink) !important; box-shadow:0 0 0 3px rgba(255,122,24,0.18); }
-.nav { border-top:none; box-shadow:0 -4px 18px rgba(91,33,182,0.10); }
-.card { box-shadow:0 4px 18px rgba(91,33,182,0.09); }
-.type-chip, .who-chip, .dice-btn, .stats-period-btn, .date-arrow, .date-bar-btn { background:#F1E9FF; color:#6B5A86; }
+.min-input:focus, .chat-input:focus { border-color:var(--pink) !important; box-shadow:0 0 0 3px rgba(240,64,122,0.22); }
+.nav { border-top:none; box-shadow:0 -4px 18px rgba(216,27,96,0.12); }
+.card { box-shadow:0 4px 18px rgba(216,27,96,0.10); }
+.type-chip, .who-chip, .dice-btn, .stats-period-btn, .date-arrow, .date-bar-btn { background:#FFE0EC; color:#A8456A; }
 .type-chip.active, .dice-btn.active { background:var(--pink); color:#fff; }
-.btn-cancel-s { background:#F1E9FF; color:#6B5A86; }
-.header { background:linear-gradient(120deg,#4C1D95 0%,#7C3AED 50%,#FF7A18 100%); box-shadow:0 4px 18px rgba(91,33,182,0.30); position:relative; overflow:hidden; }
-.today-card { background:linear-gradient(135deg,#FFE9D2 0%,#FFD3A8 100%); }
-.dinner-emoji { background:linear-gradient(135deg,#FFE0BD 0%,#E9D8FF 100%); }
-.btn-save, .today-action, .btn-log, .btn-sm { background:linear-gradient(135deg,#FF8A2B,#E8590C); }
+.btn-cancel-s { background:#FFE0EC; color:#A8456A; }
+.today-card .date-arrow { background:#fff; color:var(--pink-deep); }
+.header { background:linear-gradient(120deg,#C2185B 0%,#E91E63 50%,#FF6FA3 100%); box-shadow:0 4px 18px rgba(216,27,96,0.35); position:relative; overflow:hidden; }
+.today-card { background:linear-gradient(135deg,#FFE3EE 0%,#FFC4DA 100%); }
+.dinner-emoji { background:linear-gradient(135deg,#FFD3E3 0%,#FFEAF2 100%); }
+.btn-save, .today-action, .btn-log, .btn-sm { background:linear-gradient(135deg,#FF5C93,#D81B60); }
 .today-action-ghost { background:#fff; color:var(--pink-deep); }
-.fab { background:linear-gradient(135deg,#8B4DF0,#6D28D9); box-shadow:0 6px 20px rgba(109,40,217,0.45); }
+.fab { background:linear-gradient(135deg,#FF5C93,#C2185B); box-shadow:0 6px 20px rgba(216,27,96,0.45); }
 .task-check, .shop-check, .pin-dot { border-color:var(--line); }
 .task-check.checked, .shop-check.checked, .pin-dot.filled { border-color:transparent; }
 .spinner { border-color:var(--line); border-top-color:var(--pink); }
 .prog-bg, .sheet-handle { background:var(--line); }
-.sugg-wrap { border-top-color:rgba(232,89,12,0.35); }
+.sugg-wrap { border-top-color:rgba(216,27,96,0.35); }
 .sugg-card { background:rgba(255,255,255,0.85); }
-.idea-pill, .pill-pink { background:#FFE3C7; color:#C2410C; }
+.idea-pill, .pill-pink { background:#FFD3E3; color:#B0134E; }
 .mini-score-num, .countdown { color:var(--purple); }
 .score-mini b { color:var(--purple); }
-#fridayShow { background:#1B0B33; }
+#fridayShow { background:#2A0A1A; }
 
 /* Halloween (vert slått på automatisk 1. oktober–2. november via klassen .halloween på <html>) */
 @keyframes bat-fly { 0% { transform:translate(-30px,0) scale(0.8); } 50% { transform:translate(160px,8px) scale(1.1); } 100% { transform:translate(380px,-4px) scale(0.8); } }
@@ -476,7 +477,7 @@ body { font-family:var(--font-b); color:var(--text); overflow:hidden; }
   <button class="fab" id="fab">＋</button>
   <div id="modal"></div>
   <div id="toastEl"></div>
-  <div class="version-badge">v3.2</div>
+  <div class="version-badge">v3.3</div>
 </div>
 
 <script>
